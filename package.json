@@ -1,0 +1,46 @@
+{
+  "name": "react-ts-website",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "echo \"Run tests with a runner (e.g. vitest) if you add one\" && exit 0"
+  },
+  "dependencies": {
+    "@react-three/drei": "^9.122.0",
+    "@react-three/fiber": "^8.0.28",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    
+    "three": "^0.158.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "@types/three": "^0.158.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.9.3",
+    "vite": "^5.0.0",
+    "@vitejs/plugin-react": "^5.0.0"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

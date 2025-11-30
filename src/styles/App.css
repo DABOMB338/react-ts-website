@@ -1,0 +1,172 @@
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    margin: 0;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.header {
+    background-color: #282c34;
+    padding: 20px;
+    color: white;
+    text-align: center;
+}
+
+.header-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 20;
+    background: rgba(30,34,44,0.92);
+    box-shadow: 0 2px 16px 0 rgba(0,0,0,0.12);
+    padding: 0;
+}
+.header-nav {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 18px 32px;
+}
+
+/* header responsive sizing */
+.header-nav .nav-item {
+    font-size: clamp(13px, 1.6vw, 18px);
+    padding: 10px 14px;
+}
+
+.canvas-wrap {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+}
+
+.canvas-loading {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.8);
+    font-size: 18px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.2), rgba(0,0,0,0));
+}
+
+.main-section {
+    position: relative;
+    z-index: 15;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: calc(100vh - 68px); /* leave space for header */
+    padding: 28px;
+}
+
+.main-inner {
+    width: min(1100px, 92%);
+    background: rgba(10,12,16,0.48);
+    border-radius: 12px;
+    padding: clamp(18px, 2.25vw, 40px);
+    border: 1px solid rgba(255,255,255,0.04);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+    transform-origin: center center;
+    /* scale slightly based on viewport width to give a consistent feel */
+    transform: scale(calc(0.95 + (100vw - 320px) / 2000));
+}
+
+.main-title { font-size: clamp(26px, 6vw, 48px); margin-bottom: 10px; }
+.main-copy { font-size: clamp(14px, 2.2vw, 18px); color: rgba(255,255,255,0.88); }
+
+.overlay {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    color: white;
+    pointer-events: none; /* let three.js capture canvas interactions if any */
+}
+
+.overlay-nav {
+    display: flex;
+    gap: 10px;
+    padding: 20px;
+    align-items: center;
+    pointer-events: auto; /* nav needs to be clickable */
+}
+
+.label-toggle {
+    display: inline-flex;
+    gap: 8px;
+    margin-left: 20px;
+    background: rgba(255,255,255,0.03);
+    padding: 6px;
+    border-radius: 6px;
+}
+
+.label-option {
+    padding: 6px 10px;
+    color: rgba(255,255,255,0.8);
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.label-option.selected {
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    transform: translateY(-2px);
+}
+
+.nav-item {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+}
+
+.nav-item.active {
+    background: linear-gradient(90deg, rgba(255,255,255,0.06), rgba(255,255,255,0.12));
+    transform: translateY(-2px);
+}
+
+.content-wrapper {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    gap: 36px;
+    padding: 40px;
+    pointer-events: auto;
+}
+
+.page-section {
+    max-width: 880px;
+    background: rgba(0, 0, 0, 0.45);
+    border-radius: 8px;
+    padding: 22px;
+    border: 1px solid rgba(255,255,255,0.04);
+}
+
+.page-section h1 { font-size: 30px; margin-bottom: 6px; }
+
+/* make the canvas fill and keep everything readable on small screens */
+@media (max-width: 760px) {
+    .page-section { padding: 16px; }
+    .overlay-nav { padding: 10px; }
+}
