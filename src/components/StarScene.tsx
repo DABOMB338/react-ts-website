@@ -6,7 +6,6 @@ import { SECTION_TITLES } from './App';
 
 type StarSceneProps = {
   activeSection: number;
-  desiredLabelScreenWidth?: number | undefined;
 };
 
 function Stars({ count = 1500 }: { count?: number }) {
@@ -45,7 +44,7 @@ function Stars({ count = 1500 }: { count?: number }) {
   );
 }
 
-function SectionMarker({ position, index, desiredLabelScreenWidth }: { position: [number, number, number]; index: number; desiredLabelScreenWidth?: number }) {
+function SectionMarker({ position, index}: { position: [number, number, number]; index: number; }) {
   const ref = useRef<THREE.Mesh>(null!);
   useFrame((s) => {
     if (ref.current) ref.current.rotation.y = Math.sin(s.clock.elapsedTime * 0.5) * 0.2;
@@ -67,31 +66,43 @@ function SectionMarker({ position, index, desiredLabelScreenWidth }: { position:
       </mesh>
       {/* label mode: either draw a sprite (canvas texture) OR a DOM Html overlay via drei */}
       
-    <group scale={[4, 4, 4]}>
-        <TextSprite position={[0, 0, 0]} text={SECTION_TITLES[index]} desiredScreenWidth={desiredLabelScreenWidth ?? 160} />
+    <group scale={[0.5, 0.5, 0.5]}>
+        <TextSprite position={[0, 0, 0]} text={SECTION_TITLES[index]}/>
     </group>
 
     </group>
   );
 }
 
-function TextSprite({ position = [0, 0, 0], text = '', desiredScreenWidth = 160 }: { position?: [number, number, number]; text?: string; desiredScreenWidth?: number }) {
+function TextSprite({ position = [0, 0, 0], text = ''}: { position?: [number, number, number]; text?: string; }) {
+  const [scaleFactor, setScaleFactor] = React.useState(1);
+  const [desiredScreenWidth, setDesiredScreenWidth] = React.useState(window.visualViewport?.width ?? 0); // desired width in screen pixels
+  const [ratio, setRatio] = React.useState((window.visualViewport?.height || 1) / (window.visualViewport?.width || 1));
+  React.useEffect(() => {
+      const ro = new ResizeObserver(() => {
+        setScaleFactor(Math.min(1, (window.visualViewport?.width ?? 0) / 900 / 2));
+        setDesiredScreenWidth(window.visualViewport?.width ?? 0);
+        setRatio((window.visualViewport?.height || 1) / (window.visualViewport?.width || 1));
+      });
+      ro.observe(document.body);
+      return () => ro.disconnect();
+    }, []);
   const canvas = useMemo(() => {
     // render text onto a canvas
-    const size = 1024;
+    const size = 2048;
     const canvas = document.createElement('canvas');
     canvas.width = size;
-    canvas.height = size;
+    canvas.height = size * ratio;
     const ctx = canvas.getContext('2d')!;
-    ctx.clearRect(0, 0, size, size);
+    ctx.clearRect(0, 0, size, size * ratio);
     // background subtle
     ctx.fillStyle = 'rgba(30,34,44,0.9)';
-    ctx.fillRect(0, 0, size, size);
-    ctx.font = 'bold 48px system-ui, Arial';
+    ctx.fillRect(0, 0, size, size * ratio);
+    ctx.font = `bold ${36 / scaleFactor}px system-ui, Arial`;
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(text, size / 2, size / 8);
+    ctx.fillText(text, size / 2, size * ratio / 6);
     switch(text) {
         case 'About': {
             const lines = [
@@ -101,8 +112,8 @@ function TextSprite({ position = [0, 0, 0], text = '', desiredScreenWidth = 160 
                 "",
                 "In addition to programming, I enjoy tennis, Magic the Gathering, learning new things, and both playing and making video games."
             ];
-            let lineHeight = 48 * 1.2; // adjust based on font size
-            let lastHeight = size / 4;
+            let lineHeight = 24 * 1.2 / scaleFactor; // adjust based on font size
+            let lastHeight = size * ratio / 4;
             lines.forEach((line, i) => {
                 lastHeight = wrapText(ctx, line, size / 2, lastHeight, size, lineHeight, false);
             });
@@ -133,8 +144,8 @@ function TextSprite({ position = [0, 0, 0], text = '', desiredScreenWidth = 160 
                 true,
                 false,
             ]
-            let lineHeight = 48 * 1.2; // adjust based on font size
-            let lastHeight = size / 4;
+            let lineHeight = 24 * 1.2 / scaleFactor; // adjust based on font size
+            let lastHeight = size * ratio / 4;
             lines.forEach((line, i) => {
                 lastHeight = wrapText(ctx, line, size / 2, lastHeight, size, lineHeight, isHeader[i]);
             });
@@ -146,7 +157,7 @@ function TextSprite({ position = [0, 0, 0], text = '', desiredScreenWidth = 160 
                 "",
                 "1. AI Captioning for Epic Video Client",
                 "    - Developed an AI-powered captioning system integrated into Epic's video platform, enhancing accessibility and user engagement.",
-                "    - Utilized a 3d party transcription vendor integration through our Web RTC vendor's APIs and worked closely with our web RTC vendor to ensure it would work for our use case.",
+                "    - Utilized a 3rd party transcription vendor integration through our Web RTC vendor's APIs and worked closely with our web RTC vendor to ensure it would work for our use case.",
                 "    - Used prometheus and grafana to ensure high availability through automatic paging and useful dashboard panels.",
                 "    - Implemented a new utility to report the usage metrics for the captioning functionality.",
                 "",
@@ -154,7 +165,7 @@ function TextSprite({ position = [0, 0, 0], text = '', desiredScreenWidth = 160 
                 "    - Worked closely with the teleregistration team to create a way of displaying captions in the teleregistration view using the Epic Video Client iframe's captioning functionality.",
                 "",
                 "3. Survival Shooter Game",
-                "    - Designed and developed a survival shooter game in a 3d environment using Unity as part of a small team",
+                "    - Designed and developed a survival shooter game based off of Left 4 Dead 2 in a 3D environment using Unity as part of a small team",
                 "",
                 "4. Personal Website",
                 "    - Built a responsive website using React and Three.js to showcase my projects and skills with an interactive 3D experience."
@@ -177,10 +188,10 @@ function TextSprite({ position = [0, 0, 0], text = '', desiredScreenWidth = 160 
                 true,
                 false,
             ]
-            let lineHeight = 30 * 1.2; // adjust based on font size
-            let lastHeight = size / 4;
+            let lineHeight = 16 * 1.2 / scaleFactor; // adjust based on font size
+            let lastHeight = size * ratio / 4;
             lines.forEach((line, i) => {
-                lastHeight = wrapText(ctx, line, size / 2, lastHeight, size, lineHeight, isHeader[i]);
+                lastHeight = wrapText(ctx, line, size / 2, lastHeight, size, lineHeight, isHeader[i], (window.visualViewport?.width ?? 0) < 900);
             });
             break;
         }
@@ -191,8 +202,8 @@ function TextSprite({ position = [0, 0, 0], text = '', desiredScreenWidth = 160 
                 "",
                 "Email: mcmaholc@rose-hulman.edu"
             ];
-            let lineHeight = 48 * 1.2; // adjust based on font size
-            let lastHeight = size / 4;
+            let lineHeight = 24 * 1.2 / scaleFactor; // adjust based on font size
+            let lastHeight = size * ratio / 4;
             lines.forEach((line, i) => {
                 lastHeight = wrapText(ctx, line, size / 2, lastHeight, size, lineHeight, false);
             });
@@ -200,7 +211,7 @@ function TextSprite({ position = [0, 0, 0], text = '', desiredScreenWidth = 160 
         }
     }
     return canvas;
-  }, [text]);
+  }, [text, scaleFactor, ratio]);
 
   const texture = useMemo(() => new THREE.CanvasTexture(canvas), [canvas]);
 
@@ -222,6 +233,7 @@ function TextSprite({ position = [0, 0, 0], text = '', desiredScreenWidth = 160 
     const spriteWorldPos = new THREE.Vector3(...position);
     const camPos = camera.position;
     const distance = spriteWorldPos.distanceTo(camPos);
+    // console.log(distance);
 
     // ensure camera is PerspectiveCamera
     // fov is in degrees
@@ -229,13 +241,15 @@ function TextSprite({ position = [0, 0, 0], text = '', desiredScreenWidth = 160 
     const viewportHeight = viewport.height || 800;
 
     const worldHeightAtDistance = 2 * distance * Math.tan((fov * Math.PI) / 180 / 2);
+    // console.log(desiredScreenWidth)
     const targetWorldWidth = worldHeightAtDistance * (desiredScreenWidth / viewportHeight);
     // aspect ratio of canvas texture
     const canvasAspect = canvas.width / canvas.height;
     const targetWorldHeight = targetWorldWidth / canvasAspect;
+    // console.log(targetWorldHeight, targetWorldWidth);
 
     // smooth scaling so it doesn't pop
-    spriteRef.current.scale.lerp(new THREE.Vector3(targetWorldWidth, targetWorldHeight, 1), 0.25);
+    spriteRef.current.scale.lerp(new THREE.Vector3(targetWorldWidth, targetWorldWidth * ratio, 1), 0.25);
   });
 
   return (
@@ -260,14 +274,14 @@ function CameraController({ target }: { target: THREE.Vector3 }) {
   return null;
 }
 
-export default function StarScene({ activeSection, desiredLabelScreenWidth }: StarSceneProps) {
+export default function StarScene({ activeSection}: StarSceneProps) {
   // Arrange 4 sections in a circle, 90° apart, facing outward
   const radius = 8;
   const sectionAngles = [0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2];
   const sectionPositions: [number, number, number][] = sectionAngles.map(angle => [
-    Math.cos(angle) * radius,
+    Math.cos(-angle) * radius,
     0,
-    Math.sin(angle) * radius,
+    Math.sin(-angle) * radius,
   ]);
 
   // Camera rotates around the center to face the selected section
@@ -275,9 +289,9 @@ export default function StarScene({ activeSection, desiredLabelScreenWidth }: St
   const cameraAngle = sectionAngles[activeSection % 4];
   const cameraTarget = new THREE.Vector3(0, 0, 0);
   const cameraPosition: [number, number, number] = [
-    Math.cos(cameraAngle) * cameraDistance,
+    Math.cos(-cameraAngle) * cameraDistance,
     0,
-    Math.sin(cameraAngle) * cameraDistance,
+    Math.sin(-cameraAngle) * cameraDistance,
   ];
 
   // CameraController now rotates camera to the correct position and looks at center
@@ -308,7 +322,7 @@ export default function StarScene({ activeSection, desiredLabelScreenWidth }: St
 
       {/* Render section markers in a circle */}
       {sectionPositions.map((pos, i) => (
-        <SectionMarker key={i} position={pos} index={i} desiredLabelScreenWidth={desiredLabelScreenWidth} />
+        <SectionMarker key={i} position={pos} index={i}/>
       ))}
 
       <RotatingCameraController position={cameraPosition} target={cameraTarget} />
@@ -324,18 +338,18 @@ function wrapText(
   maxWidth: number,
   lineHeight: number,
   isHeader: boolean,
+  moreRoom: boolean = false,
 ): number {
   const words: string[] = text.split(" ");
   let line: string = "";
   const lines: string[] = [];
-
   if(isHeader) {
     ctx.font = `bold ${lineHeight / 1.2}px system-ui, Arial`;   
     ctx.textAlign = 'center';
   } else {
     ctx.font = `${lineHeight / 1.6}px system-ui, Arial`;   
     ctx.textAlign = 'left';
-    x = 30; // left align with some padding
+    x = (moreRoom ? 0.15 : 0.25) * maxWidth; // left align with some padding
   }
 
   for (let n = 0; n < words.length; n++) {
@@ -343,7 +357,7 @@ function wrapText(
     const metrics = ctx.measureText(testLine);
     const testWidth = metrics.width;
 
-    if (testWidth > maxWidth - 30 && n > 0) {
+    if (testWidth > maxWidth * (moreRoom ? 0.7 : 0.5) && n > 0) {
       lines.push(line.trim());
       line = words[n] + " ";
     } else {

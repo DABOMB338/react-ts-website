@@ -1,18 +1,18 @@
 import React, { useState, Suspense } from 'react';
 const StarScene = React.lazy(() => import('./StarScene'));
 import '../styles/App.css';
+import useWindowSize from '../hooks/useWindowSize';
 
 export const SECTION_TITLES = ['About', 'Skills', 'Projects', 'Contact'];
 
 const App: React.FC = () => {
     const [activeSection, setActiveSection] = useState<number>(0);
     const navRef = React.useRef<HTMLElement | null>(null);
-
     return (
         <div className="app-root">
             <div className="canvas-wrap">
                 <Suspense fallback={<div className="canvas-loading">Loading 3D scene…</div>}>
-                    <StarScene activeSection={activeSection} desiredLabelScreenWidth={70}/>
+                    <StarScene activeSection={activeSection}/>
                 </Suspense>
             </div>
 
