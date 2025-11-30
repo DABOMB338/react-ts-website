@@ -116,7 +116,7 @@ function TextSprite({ position = [0, 0, 0], text = '', desiredScreenWidth = 160 
                 "Python, Java, Typescript, JavaScript, C, C++, C#, MSSQL, PromQL",
                 "",
                 "Technologies",
-                "C Sharp/.NET, Unity, React, Node.js, SQL, Git, Docker, Kubernetes, Prometheus, Grafana, AWS, CosmosDB",
+                "C Sharp/.NET, React, Node.js, SQL, Git, Docker, Kubernetes, Prometheus, Grafana, AWS, CosmosDB, Unity",
                 "",
                 "Languages",
                 "English (native), Spanish (conversational)",
