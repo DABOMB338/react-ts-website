@@ -119,7 +119,7 @@ function TextSprite({ position = [0, 0, 0], text = '', desiredScreenWidth = 160 
                 "C Sharp/.NET, Unity, React, Node.js, SQL, Git, Docker, Kubernetes, Prometheus, Grafana, AWS, CosmosDB",
                 "",
                 "Languages",
-                "English (native), Spanish (conversational), Japenese (still learning)",
+                "English (native), Spanish (conversational)",
             ];
             const isHeader = [
                 false,
