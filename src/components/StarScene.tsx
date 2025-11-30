@@ -160,10 +160,13 @@ function TextSprite({ position = [0, 0, 0], text = ''}: { position?: [number, nu
                 "    - Utilized a 3rd party transcription vendor integration through our Web RTC vendor's APIs and worked closely with our web RTC vendor to ensure it would work for our use case.",
                 "    - Used prometheus and grafana to ensure high availability through automatic paging and useful dashboard panels.",
                 "    - Implemented a new utility to report the usage metrics for the captioning functionality.",
+                "",
                 "Captioning in Teleregistration",
                 "    - Worked closely with the teleregistration team to create a way of displaying captions in the teleregistration view using the Epic Video Client iframe's captioning functionality.",
+                "",
                 "Survival Shooter Game",
                 "    - Designed and developed a survival shooter game based off of Left 4 Dead 2 in a 3D environment using Unity as part of a small team",
+                "",
                 "Personal Website",
                 "    - Built a responsive website using React and Three.js to showcase my projects and skills with an interactive 3D experience."
             ];
@@ -175,14 +178,17 @@ function TextSprite({ position = [0, 0, 0], text = ''}: { position?: [number, nu
                 false,
                 false,
                 false,
-                true,
                 false,
                 true,
+                false,
+                false,
+                true,
+                false,
                 false,
                 true,
                 false,
             ]
-            let lineHeight = 16 * 1.2 / scaleFactor; // adjust based on font size
+            let lineHeight = 14 * 1.2 / scaleFactor; // adjust based on font size
             let lastHeight = size * ratio / 4;
             lines.forEach((line, i) => {
                 lastHeight = wrapText(ctx, line, size / 2, lastHeight, size, lineHeight, isHeader[i], (window.visualViewport?.width ?? 0) < 900);
@@ -332,7 +338,7 @@ function wrapText(
   maxWidth: number,
   lineHeight: number,
   isHeader: boolean,
-  moreRoom: boolean = false,
+  moreRoom: boolean = true,
 ): number {
   const words: string[] = text.split(" ");
   let line: string = "";
