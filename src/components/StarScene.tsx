@@ -155,19 +155,16 @@ function TextSprite({ position = [0, 0, 0], text = ''}: { position?: [number, nu
             const lines = [
                 "Here are some of my projects:",
                 "",
-                "1. AI Captioning for Epic Video Client",
+                "AI Captioning for Epic Video Client",
                 "    - Developed an AI-powered captioning system integrated into Epic's video platform, enhancing accessibility and user engagement.",
                 "    - Utilized a 3rd party transcription vendor integration through our Web RTC vendor's APIs and worked closely with our web RTC vendor to ensure it would work for our use case.",
                 "    - Used prometheus and grafana to ensure high availability through automatic paging and useful dashboard panels.",
                 "    - Implemented a new utility to report the usage metrics for the captioning functionality.",
-                "",
-                "2. Captioning in Teleregistration",
+                "Captioning in Teleregistration",
                 "    - Worked closely with the teleregistration team to create a way of displaying captions in the teleregistration view using the Epic Video Client iframe's captioning functionality.",
-                "",
-                "3. Survival Shooter Game",
+                "Survival Shooter Game",
                 "    - Designed and developed a survival shooter game based off of Left 4 Dead 2 in a 3D environment using Unity as part of a small team",
-                "",
-                "4. Personal Website",
+                "Personal Website",
                 "    - Built a responsive website using React and Three.js to showcase my projects and skills with an interactive 3D experience."
             ];
             const isHeader = [
@@ -178,12 +175,9 @@ function TextSprite({ position = [0, 0, 0], text = ''}: { position?: [number, nu
                 false,
                 false,
                 false,
-                false,
                 true,
                 false,
-                false,
                 true,
-                false,
                 false,
                 true,
                 false,
@@ -344,10 +338,10 @@ function wrapText(
   let line: string = "";
   const lines: string[] = [];
   if(isHeader) {
-    ctx.font = `bold ${lineHeight / 1.2}px system-ui, Arial`;   
+    ctx.font = `bold ${lineHeight / 1.2 / (!moreRoom ? 0.7 : 1)}px system-ui, Arial`;   
     ctx.textAlign = 'center';
   } else {
-    ctx.font = `${lineHeight / 1.6}px system-ui, Arial`;   
+    ctx.font = `${lineHeight / 1.6 / (!moreRoom ? 0.7 : 1)}px system-ui, Arial`;   
     ctx.textAlign = 'left';
     x = (moreRoom ? 0.15 : 0.25) * maxWidth; // left align with some padding
   }
@@ -370,5 +364,5 @@ function wrapText(
   lines.forEach((l, i) => {
     ctx.fillText(l, x, y + i * lineHeight);
   });
-  return lines.length * lineHeight + y;
+  return lines.length * lineHeight / (!moreRoom ? 0.7 : 1) + y;
 }
