@@ -164,8 +164,10 @@ function TextSprite({ position = [0, 0, 0], text = ''}: { position?: [number, nu
                 "Captioning in Teleregistration",
                 "    - Worked closely with the teleregistration team to create a way of displaying captions in the teleregistration view using the Epic Video Client iframe's captioning functionality.",
                 "",
-                "Survival Shooter Game",
-                "    - Designed and developed a survival shooter game based off of Left 4 Dead 2 in a 3D environment using Unity as part of a small team",
+                "Whiteboarding and Annotations in Epic Video Client",
+                "    - Added whiteboarding and annotation features to the Epic Video Client, allowing users to draw and annotate directly on shared video streams as well as a shared whiteboard during calls.",
+                "    - Allowed for various annotation tools including freehand drawing, emojis, text, and erasing.",
+                "    - Implemented real-time synchronization of annotations across all participants using WebRTC data channels.",
                 "",
                 "Personal Website",
                 "    - Built a responsive website using React and Three.js to showcase my projects and skills with an interactive 3D experience."
@@ -185,10 +187,12 @@ function TextSprite({ position = [0, 0, 0], text = ''}: { position?: [number, nu
                 true,
                 false,
                 false,
+                false,
+                false,
                 true,
                 false,
             ]
-            let lineHeight = 14 * 1.2 / scaleFactor; // adjust based on font size
+            let lineHeight = 13 * 1.2 / scaleFactor; // adjust based on font size
             let lastHeight = size * ratio / 4;
             lines.forEach((line, i) => {
                 lastHeight = wrapText(ctx, line, size / 2, lastHeight, size, lineHeight, isHeader[i], (window.visualViewport?.width ?? 0) < 900);
@@ -344,10 +348,10 @@ function wrapText(
   let line: string = "";
   const lines: string[] = [];
   if(isHeader) {
-    ctx.font = `bold ${lineHeight / 1.2 / (!moreRoom ? 0.7 : 1)}px system-ui, Arial`;   
+    ctx.font = `bold ${lineHeight / 1.2 / (!moreRoom ? 0.75 : 1)}px system-ui, Arial`;   
     ctx.textAlign = 'center';
   } else {
-    ctx.font = `${lineHeight / 1.6 / (!moreRoom ? 0.7 : 1)}px system-ui, Arial`;   
+    ctx.font = `${lineHeight / 1.6 / (!moreRoom ? 0.75 : 1)}px system-ui, Arial`;   
     ctx.textAlign = 'left';
     x = (moreRoom ? 0.15 : 0.25) * maxWidth; // left align with some padding
   }
@@ -370,5 +374,5 @@ function wrapText(
   lines.forEach((l, i) => {
     ctx.fillText(l, x, y + i * lineHeight);
   });
-  return lines.length * lineHeight / (!moreRoom ? 0.7 : 1) + y;
+  return lines.length * lineHeight / (!moreRoom ? 0.75 : 1) + y;
 }
