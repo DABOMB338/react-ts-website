@@ -80,7 +80,7 @@ function TextSprite({ position = [0, 0, 0], text = ''}: { position?: [number, nu
   const [ratio, setRatio] = React.useState((window.visualViewport?.height || 1) / (window.visualViewport?.width || 1));
   React.useEffect(() => {
       const ro = new ResizeObserver(() => {
-        setScaleFactor(Math.min(1, (window.visualViewport?.width ?? 0) / 900));
+        setScaleFactor(Math.min(1, (window.visualViewport?.width ?? 0) / 1200));
         setDesiredScreenWidth(window.visualViewport?.width ?? 0);
         setRatio((window.visualViewport?.height || 1) / (window.visualViewport?.width || 1));
       });
@@ -112,7 +112,7 @@ function TextSprite({ position = [0, 0, 0], text = ''}: { position?: [number, nu
                 "",
                 "In addition to programming, I enjoy tennis, Magic the Gathering, learning new things, and both playing and making video games."
             ];
-            let lineHeight = 45 * 1.2 / scaleFactor; // adjust based on font size
+            let lineHeight = 40 * 1.2 / scaleFactor; // adjust based on font size
             let lastHeight = size * ratio / 4;
             lines.forEach((line, i) => {
                 lastHeight = wrapText(ctx, line, size / 2, lastHeight, size, lineHeight, false);
@@ -144,7 +144,7 @@ function TextSprite({ position = [0, 0, 0], text = ''}: { position?: [number, nu
                 true,
                 false,
             ]
-            let lineHeight = 36 * 1.2 / scaleFactor; // adjust based on font size
+            let lineHeight = 32 * 1.2 / scaleFactor; // adjust based on font size
             let lastHeight = size * ratio / 4;
             lines.forEach((line, i) => {
                 lastHeight = wrapText(ctx, line, size / 2, lastHeight, size, lineHeight, isHeader[i]);
