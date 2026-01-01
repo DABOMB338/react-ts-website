@@ -80,7 +80,7 @@ function TextSprite({ position = [0, 0, 0], text = ''}: { position?: [number, nu
   const [ratio, setRatio] = React.useState((window.visualViewport?.height || 1) / (window.visualViewport?.width || 1));
   React.useEffect(() => {
       const ro = new ResizeObserver(() => {
-        setScaleFactor(Math.min(1, (window.visualViewport?.width ?? 0) / 1200));
+        setScaleFactor(Math.min(1, ((window.visualViewport?.width ?? 0) * (window.visualViewport?.height ?? 0)) / 800000));
         setDesiredScreenWidth(window.visualViewport?.width ?? 0);
         setRatio((window.visualViewport?.height || 1) / (window.visualViewport?.width || 1));
       });
@@ -193,9 +193,9 @@ function TextSprite({ position = [0, 0, 0], text = ''}: { position?: [number, nu
                 false,
             ]
             let lineHeight = 16 * 1.2 / scaleFactor; // adjust based on font size
-            let lastHeight = size * ratio / 4;
+            let lastHeight = size * ratio / 4;  
             lines.forEach((line, i) => {
-                lastHeight = wrapText(ctx, line, size / 2, lastHeight, size, lineHeight, isHeader[i], (window.visualViewport?.width ?? 0) < 900);
+                lastHeight = wrapText(ctx, line, size / 2, lastHeight, size, lineHeight, isHeader[i], ((window.visualViewport?.width ?? 0) * (window.visualViewport?.height ?? 0)) < 400000);
             });
             break;
         }
