@@ -7,10 +7,11 @@ function TextSprite({ position = [0, 0, 0], text = '', isActive = false, headerH
   const [canvasDims, setCanvasDims] = React.useState(() => {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
+    const dpr = window.devicePixelRatio || 1;
     const maxW = Math.floor(vw);
-    const width = Math.min(vw, maxW);
-    const height = vh;
-    return { width, height };
+    const width = Math.min(vw, maxW) * dpr;
+    const height = vh * dpr;
+    return { width, height, dpr };
   });
   const [scrollOffset, setScrollOffset] = React.useState(0);
   const [currentScroll, setCurrentScroll] = React.useState(0); // Track current scroll position
@@ -21,17 +22,18 @@ function TextSprite({ position = [0, 0, 0], text = '', isActive = false, headerH
     const handleResize = () => {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
+      const dpr = window.devicePixelRatio || 1;
       const maxW = Math.floor(vw);
-      const width = Math.min(vw, maxW);
-      const height = vh;
-      setCanvasDims({ width, height });
+      const width = Math.min(vw, maxW) * dpr;
+      const height = vh * dpr;
+      setCanvasDims({ width, height, dpr });
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
   // Measure actual wrapped text height using canvas context
   const canvasMeasurements = useMemo(() => {
-    const { width, height } = canvasDims;
+    const { width, height, dpr } = canvasDims;
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
@@ -49,7 +51,7 @@ function TextSprite({ position = [0, 0, 0], text = '', isActive = false, headerH
           "",
           "In addition to programming, I enjoy learning new things, tennis, Magic the Gathering, and both playing and making video games."
         ];
-        lineHeight = Math.round(0.023 * height) + extraSpacing;
+        lineHeight = Math.round(0.023 * height / dpr) + extraSpacing;
         break;
       }
       case 'Skills': {
@@ -66,7 +68,7 @@ function TextSprite({ position = [0, 0, 0], text = '', isActive = false, headerH
           "English (native), Spanish (conversational), Japanese (learning!)",
         ];
         isHeader = [false, false, true, false, false, true, false, false, true, false];
-        lineHeight = Math.round(0.018 * height) + extraSpacing;
+        lineHeight = Math.round(0.018 * height / dpr) + extraSpacing;
         break;
       }
       case 'Projects': {
@@ -99,7 +101,7 @@ function TextSprite({ position = [0, 0, 0], text = '', isActive = false, headerH
           "    - Built a responsive website using React and Three.js to showcase my projects and skills with an interactive 3D experience."
         ];
         isHeader = [false,false,true,false,false,false,false,false,true,false,false,false,true,false,false,true,false,false,false,false,true,false,false,false,true,false];
-        lineHeight = Math.round(0.011 * height) + extraSpacing;
+        lineHeight = Math.round(0.011 * height / dpr) + extraSpacing;
         break;
       }
       case 'Contact': {
@@ -109,58 +111,60 @@ function TextSprite({ position = [0, 0, 0], text = '', isActive = false, headerH
           "",
           "Email: luke.c.mcmahon@gmail.com"
         ];
-        lineHeight = Math.round(0.025 * height) + extraSpacing;
+        lineHeight = Math.round(0.025 * height / dpr) + extraSpacing;
         break;
       }
     }
     // Use wrapText to measure height
-    let yStart = Math.round(0.05 * height) + 32; // title font size + margin below title
+    let yStart = Math.round(0.05 * height / dpr) + 32; // title font size + margin below title
     let yCursor = yStart;
     lines.forEach((line, i) => {
       let header = isHeader[i] || false;
-      let font = header ? `bold ${Math.round(0.028 * height)}px system-ui, Arial` : `${Math.round(0.023 * height)}px system-ui, Arial`;
+      let font = header ? `bold ${Math.round(0.028 * height / dpr)}px system-ui, Arial` : `${Math.round(0.023 * height / dpr)}px system-ui, Arial`;
       ctx.font = font;
-      let maxWidth = width * 0.85;
+      let maxWidth = (width / dpr) * 0.85;
       // Use wrapText in measure-only mode (draw=false)
-      yCursor = wrapText(ctx, line, width / 2, yCursor, maxWidth, lineHeight, header, width > 1000);
+      yCursor = wrapText(ctx, line, (width / dpr) / 2, yCursor, maxWidth, lineHeight, header, width > 1000);
     });
     return { totalContentHeight: yCursor - yStart, yStart, width, height, lineHeight, lines, isHeader, extraSpacing };
   }, [text, canvasDims]);
 
   const canvas = useMemo(() => {
     // render text onto a canvas
-    const { width, height } = canvasDims;
+    const { width, height, dpr } = canvasDims;
     const ctxCanvas = document.createElement('canvas');
     ctxCanvas.width = width;
     ctxCanvas.height = height;
     const ctx = ctxCanvas.getContext('2d')!;
     ctx.clearRect(0, 0, width, height);
+    // Scale context for high-DPI screens
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     // background gradient for visual interest
-    const gradient = ctx.createLinearGradient(0, 0, width, height);
+    const gradient = ctx.createLinearGradient(0, 0, width / dpr, height / dpr);
     gradient.addColorStop(0, '#232946AA');
     gradient.addColorStop(1, '#4CC9F0AA');
     ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, width, height);
+    ctx.fillRect(0, 0, width / dpr, height / dpr);
     ctx.textBaseline = 'top';
     // Render title as first line, scrolls with content
     let y = canvasMeasurements.yStart - scrollOffset;
-    ctx.font = `bold ${Math.round(0.028 * height)}px system-ui, Arial`;
+    ctx.font = `bold ${Math.round(0.028 * height / dpr)}px system-ui, Arial`;
     ctx.fillStyle = '#F7F7FF';
     ctx.textAlign = 'center';
     ctx.shadowColor = '#4CC9F0';
     ctx.shadowBlur = 12;
-    ctx.fillText(text, width / 2, y);
-    y += Math.round(0.028 * height) + 16;
+    ctx.fillText(text, (width / dpr) / 2, y);
+    y += Math.round(0.028 * height / dpr) + 16;
     ctx.shadowBlur = 0;
     // Render wrapped text below title
     canvasMeasurements.lines.forEach((line, i) => {
       let header = canvasMeasurements.isHeader[i] || false;
-      ctx.font = header ? `bold ${Math.round(0.023 * height)}px system-ui, Arial` : `${Math.round(0.019 * height)}px system-ui, Arial`;
+      ctx.font = header ? `bold ${Math.round(0.023 * height / dpr)}px system-ui, Arial` : `${Math.round(0.019 * height / dpr)}px system-ui, Arial`;
       ctx.textAlign = header ? 'center' : 'left';
       ctx.fillStyle = header ? '#5CD9FF' : '#F7F7DF';
-      y = wrapText(ctx, line, header ? width / 2 : width * 0.08, y, width, canvasMeasurements.lineHeight, header, width > 1000);
+      y = wrapText(ctx, line, header ? (width / dpr) / 2 : (width / dpr) * 0.08, y, (width / dpr), canvasMeasurements.lineHeight, header, width > 1000);
     });
-    setTotalContentHeight(canvasMeasurements.totalContentHeight + Math.round(0.028 * height) + 16);
+    setTotalContentHeight(canvasMeasurements.totalContentHeight + Math.round(0.028 * height / dpr) + 16);
     return ctxCanvas;
   }, [text, scrollOffset, canvasMeasurements, canvasDims]);
 
