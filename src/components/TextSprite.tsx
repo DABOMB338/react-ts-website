@@ -3,10 +3,13 @@ import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { wrapText } from './textUtils';
 
-function TextSprite({ position = [0, 0, 0], text = ''}: { position?: [number, number, number]; text?: string; }) {
+function TextSprite({ position = [0, 0, 0], text = '', isActive = false }: { position?: [number, number, number]; text?: string; isActive?: boolean; }) {
   const [scaleFactor, setScaleFactor] = React.useState(1);
   const [desiredScreenWidth, setDesiredScreenWidth] = React.useState(window.visualViewport?.width ?? 0); // desired width in screen pixels
   const [ratio, setRatio] = React.useState((window.visualViewport?.height || 1) / (window.visualViewport?.width || 1));
+  const [scrollOffset, setScrollOffset] = React.useState(0);
+  const [totalContentHeight, setTotalContentHeight] = React.useState(0);
+  const spriteRef = React.useRef<THREE.Sprite>(null!);
   React.useEffect(() => {
       const ro = new ResizeObserver(() => {
         setScaleFactor(Math.min(1, ((window.visualViewport?.width ?? 0) * (window.visualViewport?.height ?? 0)) / 800000));
@@ -32,6 +35,9 @@ function TextSprite({ position = [0, 0, 0], text = ''}: { position?: [number, nu
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(text, size / 2, size * ratio / 6);
+    
+    let contentHeight = 0;
+    
     switch(text) {
         case 'About': {
             const lines = [
@@ -42,10 +48,11 @@ function TextSprite({ position = [0, 0, 0], text = ''}: { position?: [number, nu
                 "In addition to programming, I enjoy tennis, Magic the Gathering, learning new things, and both playing and making video games."
             ];
             let lineHeight = 40 * 1.2 / scaleFactor; // adjust based on font size
-            let lastHeight = size * ratio / 4;
+            let lastHeight = size * ratio / 4 - scrollOffset;
             lines.forEach((line, i) => {
                 lastHeight = wrapText(ctx, line, size / 2, lastHeight, size, lineHeight, false);
             });
+            contentHeight = lastHeight + scrollOffset;
             break;
         }
          case 'Skills': {
@@ -74,10 +81,11 @@ function TextSprite({ position = [0, 0, 0], text = ''}: { position?: [number, nu
                 false,
             ]
             let lineHeight = 32 * 1.2 / scaleFactor; // adjust based on font size
-            let lastHeight = size * ratio / 4;
+            let lastHeight = size * ratio / 4 - scrollOffset;
             lines.forEach((line, i) => {
                 lastHeight = wrapText(ctx, line, size / 2, lastHeight, size, lineHeight, isHeader[i]);
             });
+            contentHeight = lastHeight + scrollOffset;
             break;
         }
         case 'Projects': {
@@ -122,10 +130,11 @@ function TextSprite({ position = [0, 0, 0], text = ''}: { position?: [number, nu
                 false,
             ]
             let lineHeight = 16 * 1.2 / scaleFactor; // adjust based on font size
-            let lastHeight = size * ratio / 4;  
+            let lastHeight = size * ratio / 4 - scrollOffset;  
             lines.forEach((line, i) => {
                 lastHeight = wrapText(ctx, line, size / 2, lastHeight, size, lineHeight, isHeader[i], ((window.visualViewport?.width ?? 0) * (window.visualViewport?.height ?? 0)) < 400000);
             });
+            contentHeight = lastHeight + scrollOffset;
             break;
         }
         case 'Contact': {
@@ -136,15 +145,18 @@ function TextSprite({ position = [0, 0, 0], text = ''}: { position?: [number, nu
                 "Email: mcmaholc@rose-hulman.edu"
             ];
             let lineHeight = 48 * 1.2 / scaleFactor; // adjust based on font size
-            let lastHeight = size * ratio / 4;
+            let lastHeight = size * ratio / 4 - scrollOffset;
             lines.forEach((line, i) => {
                 lastHeight = wrapText(ctx, line, size / 2, lastHeight, size, lineHeight, false);
             });
+            contentHeight = lastHeight + scrollOffset;
             break;
         }
     }
+    
+    setTotalContentHeight(contentHeight);
     return canvas;
-  }, [text, scaleFactor, ratio]);
+  }, [text, scaleFactor, ratio, scrollOffset]);
 
   const texture = useMemo(() => new THREE.CanvasTexture(canvas), [canvas]);
 
@@ -158,7 +170,6 @@ function TextSprite({ position = [0, 0, 0], text = ''}: { position?: [number, nu
   // Compute world size so the sprite occupies a consistent screen size (pixels) regardless of viewport / browser.
   // Formula (perspective camera): worldWidth = 2 * distance * tan(fov/2) * (screenWidthPx / viewportHeightPx)
   const { camera, size: viewport } = useThree();
-  const spriteRef = React.useRef<THREE.Sprite>(null!);
 
   useFrame((_, delta) => {
     if (!spriteRef.current) return;
@@ -182,10 +193,50 @@ function TextSprite({ position = [0, 0, 0], text = ''}: { position?: [number, nu
     spriteRef.current.scale.lerp(new THREE.Vector3(targetWorldWidth, targetWorldWidth * ratio, 1), 0.25);
   });
 
+  // Handle mouse wheel scrolling - only for active sprite when there's overflow
+  React.useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      // Only scroll if this sprite is active and there's overflow
+      if (isActive && totalContentHeight > (2048 * ratio) / 4) {
+        e.preventDefault();
+        const scrollDelta = e.deltaY * 2; // sensitivity multiplier
+        setScrollOffset(prev => {
+          const maxScroll = Math.max(0, totalContentHeight - (2048 * ratio) / 4);
+          return Math.max(0, Math.min(prev + scrollDelta, maxScroll));
+        });
+      }
+    };
+    
+    document.addEventListener('wheel', handleWheel, { passive: false });
+    return () => document.removeEventListener('wheel', handleWheel);
+  }, [isActive, totalContentHeight, ratio]);
+
   return (
-    <sprite ref={spriteRef} position={position} scale={[0.1, 0.1, 1]}>
-      <spriteMaterial attach="material" args={[{ map: texture, toneMapped: false, transparent: true, depthWrite: false }]} />
-    </sprite>
+    <group>
+      <sprite 
+        ref={spriteRef} 
+        position={position} 
+        scale={[0.1, 0.1, 1]}
+      >
+        <spriteMaterial attach="material" args={[{ map: texture, toneMapped: false, transparent: true, depthWrite: false }]} />
+      </sprite>
+      
+      {/* Scrollbar indicator - only show if content overflows */}
+      {totalContentHeight > (2048 * ratio) / 4 && (
+        <group position={[position[0] + 1.2, position[1], position[2]]}>
+          <mesh position={[0, -0.2, 0]}>
+            <boxGeometry args={[0.08, 1.8, 0.01]} />
+            <meshBasicMaterial color="#ffffff" transparent opacity={0.15} />
+          </mesh>
+          
+          {/* Scrollbar thumb */}
+          <mesh position={[0, -0.2 + (scrollOffset / totalContentHeight) * 1.6, 0.01]}>
+            <boxGeometry args={[0.1, Math.max(0.2, (1.8 * (2048 * ratio) / 4) / totalContentHeight), 0.01]} />
+            <meshBasicMaterial color="#4CC9F0" transparent opacity={0.8} />
+          </mesh>
+        </group>
+      )}
+    </group>
   );
 }
 

@@ -38,7 +38,7 @@ export default function StarScene({ activeSection}: StarSceneProps) {
 
       {/* Render section markers in a circle */}
       {sectionPositions.map((pos, i) => (
-        <SectionMarker key={i} position={pos} index={i}/>
+        <SectionMarker key={i} position={pos} index={i} activeSection={activeSection}/>
       ))}
 
       <RotatingCameraController position={cameraPosition} target={cameraTarget} />
