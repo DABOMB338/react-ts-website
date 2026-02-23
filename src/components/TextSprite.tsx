@@ -124,7 +124,6 @@ function TextSprite({ position = [0, 0, 0], text = '', isActive = false, headerH
       // Use wrapText in measure-only mode (draw=false)
       yCursor = wrapText(ctx, line, width / 2, yCursor, maxWidth, lineHeight, header, width > 1000);
     });
-    console.log(yCursor)
     return { totalContentHeight: yCursor - yStart, yStart, width, height, lineHeight, lines, isHeader, extraSpacing };
   }, [text, canvasDims]);
 
@@ -220,7 +219,6 @@ function TextSprite({ position = [0, 0, 0], text = '', isActive = false, headerH
         e.preventDefault();
         const scrollDelta = e.deltaY * 0.5;
         let nextScroll = Math.max(0, Math.min(scrollOffsetRef.current + scrollDelta, maxScroll));
-        console.log(visibleHeight, maxScroll, scrollOffsetRef.current, scrollDelta)
         setScrollOffset(nextScroll);
         setCurrentScroll(nextScroll);
         scrollOffsetRef.current = nextScroll;
