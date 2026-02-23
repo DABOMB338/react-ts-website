@@ -248,9 +248,6 @@ function TextSprite({ position = [0, 0, 0], text = '', isActive = false, headerH
         // Use same scroll logic as wheel
         const visibleHeight = canvasDims.height - canvasMeasurements.yStart;
         const maxScroll = Math.max(0, totalContentHeight - visibleHeight + 100);
-        if (maxScroll > 0) {
-          e.preventDefault(); // Prevent pull-to-refresh if scrolling is possible
-        }
         let nextScroll = Math.max(0, Math.min(scrollOffsetRef.current + deltaY, maxScroll));
         setScrollOffset(nextScroll);
         setCurrentScroll(nextScroll);
