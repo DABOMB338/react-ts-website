@@ -124,7 +124,7 @@ function TextSprite({ position = [0, 0, 0], text = '', isActive = false, headerH
       ctx.font = font;
       let maxWidth = (width / dpr) * 0.85;
       // Use wrapText in measure-only mode (draw=false)
-      yCursor = wrapText(ctx, line, (width / dpr) / 2, yCursor, maxWidth, lineHeight, header, width > 1000);
+      yCursor = wrapText(ctx, line, (width / dpr) / 2, yCursor, maxWidth, lineHeight, header, width / dpr > 1000);
     });
     return { totalContentHeight: yCursor - yStart, yStart, width, height, lineHeight, lines, isHeader, extraSpacing };
   }, [text, canvasDims]);
@@ -162,7 +162,7 @@ function TextSprite({ position = [0, 0, 0], text = '', isActive = false, headerH
       ctx.font = header ? `bold ${Math.round(0.023 * height / dpr)}px system-ui, Arial` : `${Math.round(0.019 * height / dpr)}px system-ui, Arial`;
       ctx.textAlign = header ? 'center' : 'left';
       ctx.fillStyle = header ? '#5CD9FF' : '#F7F7DF';
-      y = wrapText(ctx, line, header ? (width / dpr) / 2 : (width / dpr) * 0.08, y, (width / dpr), canvasMeasurements.lineHeight, header, width > 1000);
+      y = wrapText(ctx, line, header ? (width / dpr) / 2 : (width / dpr) * 0.08, y, (width / dpr), canvasMeasurements.lineHeight, header, width / dpr > 1000);
     });
     setTotalContentHeight(canvasMeasurements.totalContentHeight + Math.round(0.028 * height / dpr) + 16);
     return ctxCanvas;
@@ -241,18 +241,21 @@ function TextSprite({ position = [0, 0, 0], text = '', isActive = false, headerH
         }
     };
     const handleTouchMove = (e: TouchEvent) => {
-        if (e.touches && e.touches.length === 1 && lastY) {
-            const newY = e.touches[0].clientY;
-            const deltaY = lastY - newY;
-            lastY = newY;
-            // Use same scroll logic as wheel
-            const visibleHeight = canvasDims.height - canvasMeasurements.yStart;
-            const maxScroll = Math.max(0, totalContentHeight - visibleHeight + 100);
-            let nextScroll = Math.max(0, Math.min(scrollOffsetRef.current + deltaY, maxScroll));
-            setScrollOffset(nextScroll);
-            setCurrentScroll(nextScroll);
-            scrollOffsetRef.current = nextScroll;
+      if (e.touches && e.touches.length === 1 && lastY) {
+        const newY = e.touches[0].clientY;
+        const deltaY = lastY - newY;
+        lastY = newY;
+        // Use same scroll logic as wheel
+        const visibleHeight = canvasDims.height - canvasMeasurements.yStart;
+        const maxScroll = Math.max(0, totalContentHeight - visibleHeight + 100);
+        if (maxScroll > 0) {
+          e.preventDefault(); // Prevent pull-to-refresh if scrolling is possible
         }
+        let nextScroll = Math.max(0, Math.min(scrollOffsetRef.current + deltaY, maxScroll));
+        setScrollOffset(nextScroll);
+        setCurrentScroll(nextScroll);
+        scrollOffsetRef.current = nextScroll;
+      }
     };
     const handleTouchEnd = () => {
         lastY = undefined;
