@@ -18,12 +18,12 @@ export function wrapText(
   let line: string = "";
   const lines: string[] = [];
   if(isHeader) {
-    ctx.font = `bold ${lineHeight / 1.2 / (!moreRoom ? 0.75 : 1)}px system-ui, Arial`;   
+    ctx.font = `bold ${lineHeight / 1.2}px system-ui, Arial`;   
     ctx.textAlign = 'center';
   } else {
-    ctx.font = `${lineHeight / 1.6 / (!moreRoom ? 0.75 : 1)}px system-ui, Arial`;   
+    ctx.font = `${lineHeight / 1.6}px system-ui, Arial`;   
     ctx.textAlign = 'left';
-    x = (moreRoom ? 0.15 : 0.25) * maxWidth; // left align with some padding
+    x = (moreRoom ? 0.25 : 0.15) * maxWidth; // left align with some padding
   }
 
   for (let n = 0; n < words.length; n++) {
@@ -31,7 +31,7 @@ export function wrapText(
     const metrics = ctx.measureText(testLine);
     const testWidth = metrics.width;
 
-    if (testWidth > maxWidth * (moreRoom ? 0.7 : 0.5) && n > 0) {
+    if (testWidth > maxWidth * (moreRoom ? 0.5 : 0.7) && n > 0) {
       lines.push(line.trim());
       line = words[n] + " ";
     } else {
@@ -44,5 +44,5 @@ export function wrapText(
   lines.forEach((l, i) => {
     ctx.fillText(l, x, y + i * lineHeight);
   });
-  return lines.length * lineHeight / (!moreRoom ? 0.75 : 1) + y;
+  return lines.length * lineHeight + y;
 }
