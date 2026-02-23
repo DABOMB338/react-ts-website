@@ -17,13 +17,16 @@ const App: React.FC = () => {
             </div>
 
             <header className="header-bar">
-                <nav ref={navRef} className="header-nav">
-                    {SECTION_TITLES.map((t, i) => (
-                        <button key={t} className={`nav-item ${activeSection === i ? 'active' : ''}`} onClick={() => setActiveSection(i)}>
-                            {t}
-                        </button>
-                    ))}
-                </nav>
+                <div className="header-container">
+                    <div className="header-name">My Personal Website</div>
+                    <nav ref={navRef} className="header-nav">
+                        {SECTION_TITLES.map((t, i) => (
+                            <button key={t} className={`nav-item ${activeSection === i ? 'active' : ''}`} onClick={() => setActiveSection(i)}>
+                                {t}
+                            </button>
+                        ))}
+                    </nav>
+                </div>
             </header>
         </div>
     );
