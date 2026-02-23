@@ -8,15 +8,31 @@ export const SECTION_TITLES = ['About', 'Skills', 'Projects', 'Contact'];
 const App: React.FC = () => {
     const [activeSection, setActiveSection] = useState<number>(0);
     const navRef = React.useRef<HTMLElement | null>(null);
+    const headerRef = React.useRef<HTMLDivElement | null>(null);
+    const [headerHeight, setHeaderHeight] = useState<number>(0);
+
+    React.useEffect(() => {
+        if (headerRef.current) {
+            setHeaderHeight(headerRef.current.offsetHeight);
+        }
+        const handleResize = () => {
+            if (headerRef.current) {
+                setHeaderHeight(headerRef.current.offsetHeight);
+            }
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     return (
         <div className="app-root">
             <div className="canvas-wrap">
                 <Suspense fallback={<div className="canvas-loading">Loading 3D scene…</div>}>
-                    <StarScene activeSection={activeSection}/>
+                    <StarScene activeSection={activeSection} headerHeight={headerHeight}/>
                 </Suspense>
             </div>
 
-            <header className="header-bar">
+            <header className="header-bar" ref={headerRef}>
                 <div className="header-container">
                     <div className="header-name">My Personal Website</div>
                     <nav ref={navRef} className="header-nav">
