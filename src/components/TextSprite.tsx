@@ -45,9 +45,9 @@ function TextSprite({ position = [0, 0, 0], text = '', isActive = false, headerH
         lines = [
           "Hey, I'm Luke McMahon. I'm a software developer with a passion for new technologies and creative problem solving.",
           "",
-          "Through my projects and through competitive programming, I have worked with a wide variety of tools and languages, and I love learning more every day!",
+          "Through my projects, both personal and professional, and through competitive programming, I have worked with a wide variety of tools and languages, and I love learning more every day!",
           "",
-          "In addition to programming, I enjoy tennis, Magic the Gathering, learning new things, and both playing and making video games."
+          "In addition to programming, I enjoy learning new things, tennis, Magic the Gathering, and both playing and making video games."
         ];
         lineHeight = Math.round(0.023 * height) + extraSpacing;
         break;
@@ -94,10 +94,11 @@ function TextSprite({ position = [0, 0, 0], text = '', isActive = false, headerH
           "LinkedIn Salary Predictor",
           "    - Scraped, cleaned, and manipulated LinkedIn job posting data using Python to create a dataset of feature-rich job data that could be useful for determining salaries.",
           "    - Built a machine learning model using Python and keras to predict salaries based on LinkedIn job posting data, achieving an R² score of 0.75.",
+          "",
           "Personal Website",
           "    - Built a responsive website using React and Three.js to showcase my projects and skills with an interactive 3D experience."
         ];
-        isHeader = [false,false,true,false,false,false,false,false,true,false,false,true,false,false,false,false,true,false];
+        isHeader = [false,false,true,false,false,false,false,false,true,false,false,false,true,false,false,true,false,false,false,false,true,false,false,false,true,false];
         lineHeight = Math.round(0.011 * height) + extraSpacing;
         break;
       }
@@ -106,7 +107,7 @@ function TextSprite({ position = [0, 0, 0], text = '', isActive = false, headerH
           "Want to know more?",
           "Let's talk!",
           "",
-          "Email: mcmaholc@rose-hulman.edu"
+          "Email: luke.c.mcmahon@gmail.com"
         ];
         lineHeight = Math.round(0.025 * height) + extraSpacing;
         break;
@@ -257,5 +258,3 @@ function TextSprite({ position = [0, 0, 0], text = '', isActive = false, headerH
 }
 
 export default TextSprite;
-
-            // Scrollbar indicator removed for cleaner UI
