@@ -161,7 +161,7 @@ function TextSprite({ position = [0, 0, 0], text = '', isActive = false, headerH
     ctx.shadowColor = '#4CC9F0';
     ctx.shadowBlur = 12;
     ctx.fillText(text, (width / dpr) / 2, y);
-    y += Math.round(0.028 * height / dpr) + 16;
+    y += Math.round(0.056 * height / dpr) + 16;
     ctx.shadowBlur = 0;
     // Render wrapped text below title
     canvasMeasurements.lines.forEach((line, i) => {
