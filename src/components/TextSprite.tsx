@@ -217,7 +217,7 @@ function TextSprite({ position = [0, 0, 0], text = '', isActive = false, headerH
   React.useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
       // Correct visible height calculation
-      const visibleHeight = canvasDims.height - canvasMeasurements.yStart;
+      const visibleHeight = canvasDims.height / canvasDims.dpr - canvasMeasurements.yStart;
       const maxScroll = Math.max(0, totalContentHeight - visibleHeight + 100); // add some padding to prevent cutting off text
       if (isActive && totalContentHeight > visibleHeight) {
         e.preventDefault();
@@ -246,7 +246,7 @@ function TextSprite({ position = [0, 0, 0], text = '', isActive = false, headerH
         const deltaY = lastY - newY;
         lastY = newY;
         // Use same scroll logic as wheel
-        const visibleHeight = canvasDims.height - canvasMeasurements.yStart;
+        const visibleHeight = canvasDims.height / canvasDims.dpr - canvasMeasurements.yStart;
         const maxScroll = Math.max(0, totalContentHeight - visibleHeight + 100);
         let nextScroll = Math.max(0, Math.min(scrollOffsetRef.current + deltaY, maxScroll));
         setScrollOffset(nextScroll);
