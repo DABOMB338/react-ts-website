@@ -155,7 +155,7 @@ function TextSprite({ position = [0, 0, 0], text = '', isActive = false, headerH
     ctx.textBaseline = 'top';
     // Render title as first line, scrolls with content
     let y = canvasMeasurements.yStart - scrollOffset;
-    ctx.font = `bold ${Math.round(0.028 * height / dpr)}px system-ui, Arial`;
+    ctx.font = `bold ${Math.round(0.056 * height / dpr)}px system-ui, Arial`;
     ctx.fillStyle = '#F7F7FF';
     ctx.textAlign = 'center';
     ctx.shadowColor = '#4CC9F0';
