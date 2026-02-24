@@ -234,38 +234,38 @@ function TextSprite({ position = [0, 0, 0], text = '', isActive = false, headerH
 
     // Touch scroll for mobile
     React.useEffect(() => {
-    let lastY: number | undefined = undefined;
-    const handleTouchStart = (e: TouchEvent) => {
-        if (e.touches && e.touches.length === 1) {
-            lastY = e.touches[0].clientY;
+        let lastY: number | undefined = undefined;
+        const handleTouchStart = (e: TouchEvent) => {
+            if (e.touches && e.touches.length === 1) {
+                lastY = e.touches[0].clientY;
+            }
+        };
+        const handleTouchMove = (e: TouchEvent) => {
+        if (isActive && e.touches && e.touches.length === 1 && lastY) {
+            const newY = e.touches[0].clientY;
+            const deltaY = lastY - newY;
+            lastY = newY;
+            // Use same scroll logic as wheel
+            const visibleHeight = canvasDims.height / canvasDims.dpr - canvasMeasurements.yStart;
+            const maxScroll = Math.max(0, totalContentHeight - visibleHeight + 100);
+            let nextScroll = Math.max(0, Math.min(scrollOffsetRef.current + deltaY, maxScroll));
+            setScrollOffset(nextScroll);
+            setCurrentScroll(nextScroll);
+            scrollOffsetRef.current = nextScroll;
         }
-    };
-    const handleTouchMove = (e: TouchEvent) => {
-      if (isActive && e.touches && e.touches.length === 1 && lastY) {
-        const newY = e.touches[0].clientY;
-        const deltaY = lastY - newY;
-        lastY = newY;
-        // Use same scroll logic as wheel
-        const visibleHeight = canvasDims.height / canvasDims.dpr - canvasMeasurements.yStart;
-        const maxScroll = Math.max(0, totalContentHeight - visibleHeight + 100);
-        let nextScroll = Math.max(0, Math.min(scrollOffsetRef.current + deltaY, maxScroll));
-        setScrollOffset(nextScroll);
-        setCurrentScroll(nextScroll);
-        scrollOffsetRef.current = nextScroll;
-      }
-    };
-    const handleTouchEnd = () => {
-        lastY = undefined;
-    };
-    document.addEventListener('touchstart', handleTouchStart, { passive: false });
-    document.addEventListener('touchmove', handleTouchMove, { passive: false });
-    document.addEventListener('touchend', handleTouchEnd, { passive: false });
-    return () => {
-        document.removeEventListener('touchstart', handleTouchStart);
-        document.removeEventListener('touchmove', handleTouchMove);
-        document.removeEventListener('touchend', handleTouchEnd);
-    };
-    }, [canvasDims.height, canvasMeasurements.yStart, totalContentHeight]);
+        };
+        const handleTouchEnd = () => {
+            lastY = undefined;
+        };
+        document.addEventListener('touchstart', handleTouchStart, { passive: false });
+        document.addEventListener('touchmove', handleTouchMove, { passive: false });
+        document.addEventListener('touchend', handleTouchEnd, { passive: false });
+        return () => {
+            document.removeEventListener('touchstart', handleTouchStart);
+            document.removeEventListener('touchmove', handleTouchMove);
+            document.removeEventListener('touchend', handleTouchEnd);
+        };
+    }, [isActive, canvasDims.height, canvasMeasurements.yStart, totalContentHeight]);
 
   React.useEffect(() => {
     scrollOffsetRef.current = scrollOffset; // keep ref in sync
