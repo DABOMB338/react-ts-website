@@ -10,7 +10,7 @@ type StarSceneProps = {
   headerHeight: number;
 };
 
-export default function StarScene({ activeSection, headerHeight }: StarSceneProps) {
+export default function StarScene({ activeSection, headerHeight, rotateLeft, rotateRight }: StarSceneProps & { rotateLeft: () => void; rotateRight: () => void }) {
   // Arrange 4 sections in a circle, 90° apart, facing outward
   const radius = 8;
   const sectionAngles = [0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2];
@@ -39,7 +39,7 @@ export default function StarScene({ activeSection, headerHeight }: StarSceneProp
 
       {/* Render section markers in a circle */}
       {sectionPositions.map((pos, i) => (
-        <SectionMarker key={i} position={pos} index={i} activeSection={activeSection} headerHeight={headerHeight}/>
+        <SectionMarker key={i} position={pos} index={i} activeSection={activeSection} headerHeight={headerHeight} rotateLeft={rotateLeft} rotateRight={rotateRight}/>
       ))}
 
       <RotatingCameraController position={cameraPosition} target={cameraTarget} />

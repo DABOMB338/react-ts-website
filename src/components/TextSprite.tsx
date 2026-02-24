@@ -3,7 +3,14 @@ import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { wrapText } from './textUtils';
 
-function TextSprite({ position = [0, 0, 0], text = '', isActive = false, headerHeight = 0 }: { position?: [number, number, number]; text?: string; isActive?: boolean; headerHeight?: number; }) {
+function TextSprite({ position = [0, 0, 0], text = '', isActive = false, headerHeight = 0, onSwipeLeft, onSwipeRight }: {
+  position?: [number, number, number];
+  text?: string;
+  isActive?: boolean;
+  headerHeight?: number;
+  onSwipeLeft?: () => void;
+  onSwipeRight?: () => void;
+}) {
   const [canvasDims, setCanvasDims] = React.useState(() => {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
@@ -232,40 +239,73 @@ function TextSprite({ position = [0, 0, 0], text = '', isActive = false, headerH
     return () => document.removeEventListener('wheel', handleWheel);
   }, [isActive, totalContentHeight, canvasDims.height, canvasMeasurements.yStart]);
 
-    // Touch scroll for mobile
+    // Touch scroll and swipe for mobile
     React.useEffect(() => {
-        let lastY: number | undefined = undefined;
-        const handleTouchStart = (e: TouchEvent) => {
-            if (e.touches && e.touches.length === 1) {
-                lastY = e.touches[0].clientY;
-            }
-        };
-        const handleTouchMove = (e: TouchEvent) => {
-        if (isActive && e.touches && e.touches.length === 1 && lastY) {
-            const newY = e.touches[0].clientY;
-            const deltaY = lastY - newY;
-            lastY = newY;
-            // Use same scroll logic as wheel
-            const visibleHeight = canvasDims.height / canvasDims.dpr - canvasMeasurements.yStart;
-            const maxScroll = Math.max(0, totalContentHeight - visibleHeight + 100);
-            let nextScroll = Math.max(0, Math.min(scrollOffsetRef.current + deltaY, maxScroll));
-            setScrollOffset(nextScroll);
-            setCurrentScroll(nextScroll);
-            scrollOffsetRef.current = nextScroll;
+      let lastY: number | undefined = undefined;
+      let lastX: number | undefined = undefined;
+      let swipeStartX: number | undefined = undefined;
+      let swipeStartY: number | undefined = undefined;
+      let swipeDetected = false;
+      const SWIPE_THRESHOLD = 90; // px
+      const handleTouchStart = (e: TouchEvent) => {
+        if (e.touches && e.touches.length === 1) {
+          lastY = e.touches[0].clientY;
+          lastX = e.touches[0].clientX;
+          swipeStartX = e.touches[0].clientX;
+          swipeStartY = e.touches[0].clientY;
+          swipeDetected = false;
         }
-        };
-        const handleTouchEnd = () => {
-            lastY = undefined;
-        };
-        document.addEventListener('touchstart', handleTouchStart, { passive: false });
-        document.addEventListener('touchmove', handleTouchMove, { passive: false });
-        document.addEventListener('touchend', handleTouchEnd, { passive: false });
-        return () => {
-            document.removeEventListener('touchstart', handleTouchStart);
-            document.removeEventListener('touchmove', handleTouchMove);
-            document.removeEventListener('touchend', handleTouchEnd);
-        };
-    }, [isActive, canvasDims.height, canvasMeasurements.yStart, totalContentHeight]);
+      };
+      const handleTouchMove = (e: TouchEvent) => {
+        if (isActive && e.touches && e.touches.length === 1 && lastY !== undefined && lastX !== undefined && swipeStartX !== undefined && swipeStartY !== undefined) {
+          const newY = e.touches[0].clientY;
+          const newX = e.touches[0].clientX;
+          const deltaY = lastY - newY;
+          const deltaX = lastX - newX;
+          lastY = newY;
+          lastX = newX;
+          // Detect horizontal swipe (ignore if already detected in this gesture)
+          if (!swipeDetected) {
+            const totalDeltaX = newX - swipeStartX;
+            const totalDeltaY = newY - swipeStartY;
+            if (Math.abs(totalDeltaX) > SWIPE_THRESHOLD && Math.abs(totalDeltaX) > Math.abs(totalDeltaY)) {
+              swipeDetected = true;
+              if (totalDeltaX < 0 && typeof onSwipeLeft === 'function') {
+                onSwipeLeft();
+              } else if (totalDeltaX > 0 && typeof onSwipeRight === 'function') {
+                onSwipeRight();
+              }
+              return; // Don't scroll vertically if swiping horizontally
+            }
+          }
+          // Otherwise, handle vertical scroll
+          const visibleHeight = canvasDims.height / canvasDims.dpr - canvasMeasurements.yStart;
+          const maxScroll = Math.max(0, totalContentHeight - visibleHeight + 100);
+          if (maxScroll > 0) {
+            e.preventDefault(); // Prevent pull-to-refresh if scrolling is possible
+          }
+          let nextScroll = Math.max(0, Math.min(scrollOffsetRef.current + deltaY, maxScroll));
+          setScrollOffset(nextScroll);
+          setCurrentScroll(nextScroll);
+          scrollOffsetRef.current = nextScroll;
+        }
+      };
+      const handleTouchEnd = () => {
+        lastY = undefined;
+        lastX = undefined;
+        swipeStartX = undefined;
+        swipeStartY = undefined;
+        swipeDetected = false;
+      };
+      document.addEventListener('touchstart', handleTouchStart, { passive: false });
+      document.addEventListener('touchmove', handleTouchMove, { passive: false });
+      document.addEventListener('touchend', handleTouchEnd, { passive: false });
+      return () => {
+        document.removeEventListener('touchstart', handleTouchStart);
+        document.removeEventListener('touchmove', handleTouchMove);
+        document.removeEventListener('touchend', handleTouchEnd);
+      };
+    }, [isActive, canvasDims.height, canvasDims.dpr, canvasMeasurements.yStart, totalContentHeight, onSwipeLeft, onSwipeRight]);
 
   React.useEffect(() => {
     scrollOffsetRef.current = scrollOffset; // keep ref in sync

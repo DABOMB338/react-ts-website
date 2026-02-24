@@ -24,11 +24,19 @@ const App: React.FC = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
+    const rotateRight = () => {
+        setActiveSection(prev => (prev - 1 + SECTION_TITLES.length) % SECTION_TITLES.length);
+    };
+
+    const rotateLeft = () => {
+        setActiveSection(prev => (prev + 1) % SECTION_TITLES.length);
+    };
+
     return (
         <div className="app-root">
             <div className="canvas-wrap">
                 <Suspense fallback={<div className="canvas-loading">Loading 3D scene…</div>}>
-                    <StarScene activeSection={activeSection} headerHeight={headerHeight}/>
+                    <StarScene activeSection={activeSection} headerHeight={headerHeight} rotateLeft={rotateLeft} rotateRight={rotateRight}/>
                 </Suspense>
             </div>
 
