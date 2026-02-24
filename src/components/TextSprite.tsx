@@ -241,7 +241,7 @@ function TextSprite({ position = [0, 0, 0], text = '', isActive = false, headerH
         }
     };
     const handleTouchMove = (e: TouchEvent) => {
-      if (e.touches && e.touches.length === 1 && lastY) {
+      if (isActive && e.touches && e.touches.length === 1 && lastY) {
         const newY = e.touches[0].clientY;
         const deltaY = lastY - newY;
         lastY = newY;
