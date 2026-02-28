@@ -3,13 +3,15 @@ import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { wrapText } from './textUtils';
 
-function TextSprite({ position = [0, 0, 0], text = '', isActive = false, headerHeight = 0, onSwipeLeft, onSwipeRight }: {
+function TextSprite({ position = [0, 0, 0], text = '', sectionIndex = 0, isActive = false, headerHeight = 0, onSwipeLeft, onSwipeRight, onScrollableChange }: {
   position?: [number, number, number];
   text?: string;
+  sectionIndex?: number;
   isActive?: boolean;
   headerHeight?: number;
   onSwipeLeft?: () => void;
   onSwipeRight?: () => void;
+  onScrollableChange?: (sectionIndex: number, scrollable: boolean) => void;
 }) {
   const [canvasDims, setCanvasDims] = React.useState(() => {
     const vw = window.innerWidth;
@@ -174,6 +176,15 @@ function TextSprite({ position = [0, 0, 0], text = '', isActive = false, headerH
     setTotalContentHeight(canvasMeasurements.totalContentHeight + Math.round(0.028 * height / dpr) + 16);
     return ctxCanvas;
   }, [text, scrollOffset, canvasMeasurements, canvasDims]);
+
+  // Report scrollability to parent when content/dimensions change
+  React.useEffect(() => {
+    if (onScrollableChange && isActive) {
+      const visibleHeight = canvasDims.height / canvasDims.dpr - canvasMeasurements.yStart;
+      const scrollable = totalContentHeight > visibleHeight;
+      onScrollableChange(sectionIndex, scrollable);
+    }
+  }, [totalContentHeight, canvasDims.height, canvasDims.dpr, canvasMeasurements.yStart, isActive, sectionIndex, onScrollableChange]);
 
   const texture = useMemo(() => new THREE.CanvasTexture(canvas), [canvas]);
 

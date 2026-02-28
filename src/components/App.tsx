@@ -1,7 +1,6 @@
-import React, { useState, Suspense } from 'react';
+import React, { useState, Suspense, useCallback } from 'react';
 const StarScene = React.lazy(() => import('./StarScene'));
 import '../styles/App.css';
-import useWindowSize from '../hooks/useWindowSize';
 
 export const SECTION_TITLES = ['About', 'Skills', 'Projects', 'Contact'];
 
@@ -10,6 +9,8 @@ const App: React.FC = () => {
     const navRef = React.useRef<HTMLElement | null>(null);
     const headerRef = React.useRef<HTMLDivElement | null>(null);
     const [headerHeight, setHeaderHeight] = useState<number>(0);
+    const [hasScrolled, setHasScrolled] = useState(false);
+    const [isActiveScrollable, setIsActiveScrollable] = useState(false);
 
     React.useEffect(() => {
         if (headerRef.current) {
@@ -24,6 +25,29 @@ const App: React.FC = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
+    // Reset scroll indicator when section changes
+    React.useEffect(() => {
+        setHasScrolled(false);
+        setIsActiveScrollable(false);
+    }, [activeSection]);
+
+    // Hide indicator on first scroll/touch
+    React.useEffect(() => {
+        const onScroll = () => setHasScrolled(true);
+        document.addEventListener('wheel', onScroll, { passive: true, once: true });
+        document.addEventListener('touchmove', onScroll, { passive: true, once: true });
+        return () => {
+            document.removeEventListener('wheel', onScroll);
+            document.removeEventListener('touchmove', onScroll);
+        };
+    }, [activeSection]);
+
+    const handleScrollableChange = useCallback((sectionIndex: number, scrollable: boolean) => {
+        if (sectionIndex === activeSection) {
+            setIsActiveScrollable(scrollable);
+        }
+    }, [activeSection]);
+
     const rotateRight = () => {
         setActiveSection(prev => (prev - 1 + SECTION_TITLES.length) % SECTION_TITLES.length);
     };
@@ -36,13 +60,13 @@ const App: React.FC = () => {
         <div className="app-root">
             <div className="canvas-wrap">
                 <Suspense fallback={<div className="canvas-loading">Loading 3D scene…</div>}>
-                    <StarScene activeSection={activeSection} headerHeight={headerHeight} rotateLeft={rotateLeft} rotateRight={rotateRight}/>
+                    <StarScene activeSection={activeSection} headerHeight={headerHeight} rotateLeft={rotateLeft} rotateRight={rotateRight} onScrollableChange={handleScrollableChange}/>
                 </Suspense>
             </div>
 
             <header className="header-bar" ref={headerRef}>
                 <div className="header-container">
-                    <div className="header-name">My Personal Website</div>
+                    <div className="header-name">Luke McMahon</div>
                     <nav ref={navRef} className="header-nav">
                         {SECTION_TITLES.map((t, i) => (
                             <button key={t} className={`nav-item ${activeSection === i ? 'active' : ''}`} onClick={() => setActiveSection(i)}>
@@ -52,6 +76,13 @@ const App: React.FC = () => {
                     </nav>
                 </div>
             </header>
+
+            {isActiveScrollable && !hasScrolled && (
+                <div className="scroll-indicator">
+                    <div className="scroll-indicator-arrow" />
+                    <span className="scroll-indicator-text">Scroll</span>
+                </div>
+            )}
         </div>
     );
 };

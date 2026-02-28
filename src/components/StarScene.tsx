@@ -8,9 +8,12 @@ import RotatingCameraController from './RotatingCameraController';
 type StarSceneProps = {
   activeSection: number;
   headerHeight: number;
+  rotateLeft: () => void;
+  rotateRight: () => void;
+  onScrollableChange: (sectionIndex: number, scrollable: boolean) => void;
 };
 
-export default function StarScene({ activeSection, headerHeight, rotateLeft, rotateRight }: StarSceneProps & { rotateLeft: () => void; rotateRight: () => void }) {
+export default function StarScene({ activeSection, headerHeight, rotateLeft, rotateRight, onScrollableChange }: StarSceneProps) {
   // Arrange 4 sections in a circle, 90° apart, facing outward
   const radius = 8;
   const sectionAngles = [0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2];
@@ -39,7 +42,7 @@ export default function StarScene({ activeSection, headerHeight, rotateLeft, rot
 
       {/* Render section markers in a circle */}
       {sectionPositions.map((pos, i) => (
-        <SectionMarker key={i} position={pos} index={i} activeSection={activeSection} headerHeight={headerHeight} rotateLeft={rotateLeft} rotateRight={rotateRight}/>
+        <SectionMarker key={i} position={pos} index={i} activeSection={activeSection} headerHeight={headerHeight} rotateLeft={rotateLeft} rotateRight={rotateRight} onScrollableChange={onScrollableChange}/>
       ))}
 
       <RotatingCameraController position={cameraPosition} target={cameraTarget} />

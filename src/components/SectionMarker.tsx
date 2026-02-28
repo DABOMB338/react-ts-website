@@ -4,7 +4,7 @@ import { useFrame } from '@react-three/fiber';
 import TextSprite from './TextSprite';
 import { SECTION_TITLES } from './App';
 
-function SectionMarker({ position, index, activeSection, headerHeight, rotateLeft, rotateRight }: { position: [number, number, number]; index: number; activeSection: number; headerHeight: number; rotateLeft: () => void; rotateRight: () => void; }) {
+function SectionMarker({ position, index, activeSection, headerHeight, rotateLeft, rotateRight, onScrollableChange }: { position: [number, number, number]; index: number; activeSection: number; headerHeight: number; rotateLeft: () => void; rotateRight: () => void; onScrollableChange: (sectionIndex: number, scrollable: boolean) => void; }) {
   const ref = useRef<THREE.Mesh>(null!);
   useFrame((s) => {
     if (ref.current) ref.current.rotation.y = Math.sin(s.clock.elapsedTime * 0.5) * 0.2;
@@ -25,7 +25,7 @@ function SectionMarker({ position, index, activeSection, headerHeight, rotateLef
       </mesh>
 
       <group scale={[0.5, 0.5, 0.5]}>
-        <TextSprite position={[0, 0, 0]} text={SECTION_TITLES[index]} isActive={activeSection === index} headerHeight={headerHeight} onSwipeLeft={rotateLeft} onSwipeRight={rotateRight}/>
+        <TextSprite position={[0, 0, 0]} text={SECTION_TITLES[index]} sectionIndex={index} isActive={activeSection === index} headerHeight={headerHeight} onSwipeLeft={rotateLeft} onSwipeRight={rotateRight} onScrollableChange={onScrollableChange}/>
       </group>
     </group>
   );
