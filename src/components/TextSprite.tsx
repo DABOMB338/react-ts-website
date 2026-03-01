@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { wrapText } from './textUtils';
@@ -23,12 +23,18 @@ function TextSprite({ position = [0, 0, 0], text = '', sectionIndex = 0, isActiv
     const height = vh * dpr;
     return { width, height, dpr };
   });
-  const [scrollOffset, setScrollOffset] = React.useState(0);
-  const [currentScroll, setCurrentScroll] = React.useState(0); // Track current scroll position
   const [totalContentHeight, setTotalContentHeight] = React.useState(0);
   const spriteRef = React.useRef<THREE.Sprite>(null!);
   const scrollOffsetRef = React.useRef(0);
+  const targetScrollRef = React.useRef(0);
   const contentEndYRef = React.useRef(0);
+  const lastDrawnScrollRef = React.useRef(-1);
+
+  // Persistent canvas and texture — created once, reused for all redraws
+  const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
+  const textureRef = React.useRef<THREE.CanvasTexture | null>(null);
+  const textureDimsRef = React.useRef<{ w: number; h: number }>({ w: 0, h: 0 });
+
   React.useEffect(() => {
     const handleResize = () => {
       const vw = window.innerWidth;
@@ -42,6 +48,7 @@ function TextSprite({ position = [0, 0, 0], text = '', sectionIndex = 0, isActiv
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
   // Measure actual wrapped text height using canvas context
   const canvasMeasurements = useMemo(() => {
     const { width, height, dpr } = canvasDims;
@@ -125,38 +132,46 @@ function TextSprite({ position = [0, 0, 0], text = '', sectionIndex = 0, isActiv
       }
     }
     // Use wrapText to measure height
-    let yStart = Math.round(0.05 * height / dpr) + 32; // title font size + margin below title
+    let yStart = Math.round(0.05 * height / dpr) + 32;
     let yCursor = yStart;
     lines.forEach((line, i) => {
       let header = isHeader[i] || false;
       let font = header ? `bold ${Math.round(0.028 * height / dpr)}px system-ui, Arial` : `${Math.round(0.023 * height / dpr)}px system-ui, Arial`;
       ctx.font = font;
       let maxWidth = (width / dpr) * 0.85;
-      // Use wrapText in measure-only mode (draw=false)
       yCursor = wrapText(ctx, line, (width / dpr) / 2, yCursor, maxWidth, lineHeight, header, width / dpr > 1000);
     });
     return { totalContentHeight: yCursor - yStart, yStart, width, height, lineHeight, lines, isHeader, extraSpacing };
   }, [text, canvasDims]);
 
-  const canvas = useMemo(() => {
-    // render text onto a canvas
+  // Draw function — redraws onto the persistent canvas at a given scroll offset
+  const drawCanvas = useCallback((scrollPos: number) => {
     const { width, height, dpr } = canvasDims;
-    const ctxCanvas = document.createElement('canvas');
-    ctxCanvas.width = width;
-    ctxCanvas.height = height;
-    const ctx = ctxCanvas.getContext('2d')!;
+
+    // Ensure persistent canvas exists and is the right size
+    if (!canvasRef.current) {
+      canvasRef.current = document.createElement('canvas');
+    }
+    const cvs = canvasRef.current;
+    if (cvs.width !== width || cvs.height !== height) {
+      cvs.width = width;
+      cvs.height = height;
+    }
+
+    const ctx = cvs.getContext('2d')!;
     ctx.clearRect(0, 0, width, height);
-    // Scale context for high-DPI screens
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    // background gradient for visual interest
+
+    // Background gradient
     const gradient = ctx.createLinearGradient(0, 0, width / dpr, height / dpr);
     gradient.addColorStop(0, '#232946AA');
     gradient.addColorStop(1, '#4CC9F0AA');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width / dpr, height / dpr);
     ctx.textBaseline = 'top';
-    // Render title as first line, scrolls with content
-    let y = canvasMeasurements.yStart - scrollOffset;
+
+    // Title
+    let y = canvasMeasurements.yStart - scrollPos;
     ctx.font = `bold ${Math.round(0.056 * height / dpr)}px system-ui, Arial`;
     ctx.fillStyle = '#F7F7FF';
     ctx.textAlign = 'center';
@@ -165,7 +180,8 @@ function TextSprite({ position = [0, 0, 0], text = '', sectionIndex = 0, isActiv
     ctx.fillText(text, (width / dpr) / 2, y);
     y += Math.round(0.056 * height / dpr) + 16;
     ctx.shadowBlur = 0;
-    // Render wrapped text below title
+
+    // Body text
     canvasMeasurements.lines.forEach((line, i) => {
       let header = canvasMeasurements.isHeader[i] || false;
       ctx.font = header ? `bold ${Math.round(0.023 * height / dpr)}px system-ui, Arial` : `${Math.round(0.019 * height / dpr)}px system-ui, Arial`;
@@ -173,11 +189,32 @@ function TextSprite({ position = [0, 0, 0], text = '', sectionIndex = 0, isActiv
       ctx.fillStyle = header ? '#5CD9FF' : '#F7F7DF';
       y = wrapText(ctx, line, header ? (width / dpr) / 2 : (width / dpr) * 0.08, y, (width / dpr), canvasMeasurements.lineHeight, header, width / dpr > 1000);
     });
-    setTotalContentHeight(canvasMeasurements.totalContentHeight + Math.round(0.028 * height / dpr) + 16);
-    // Store where content ends as a fraction of viewport height
+
     contentEndYRef.current = y / (height / dpr);
-    return ctxCanvas;
-  }, [text, scrollOffset, canvasMeasurements, canvasDims]);
+
+    // Recreate texture when dimensions change, otherwise just flag for update
+    const dimsChanged = textureDimsRef.current.w !== width || textureDimsRef.current.h !== height;
+    if (!textureRef.current || dimsChanged) {
+      if (textureRef.current) {
+        textureRef.current.dispose();
+      }
+      textureRef.current = new THREE.CanvasTexture(cvs);
+      textureDimsRef.current = { w: width, h: height };
+    } else {
+      textureRef.current.needsUpdate = true;
+    }
+  }, [text, canvasMeasurements, canvasDims]);
+
+  // Initial draw + redraw on content/dimension changes (including resize)
+  React.useEffect(() => {
+    // Reset scroll on resize since content reflows
+    scrollOffsetRef.current = 0;
+    targetScrollRef.current = 0;
+    lastDrawnScrollRef.current = -1; // Force useFrame to redraw
+
+    drawCanvas(0);
+    setTotalContentHeight(canvasMeasurements.totalContentHeight + Math.round(canvasDims.height / canvasDims.dpr * 0.028) + 16);
+  }, [drawCanvas, canvasMeasurements, canvasDims]);
 
   // Report scrollability to parent when content/dimensions change
   React.useEffect(() => {
@@ -188,156 +225,164 @@ function TextSprite({ position = [0, 0, 0], text = '', sectionIndex = 0, isActiv
     }
   }, [totalContentHeight, canvasDims.height, canvasDims.dpr, canvasMeasurements.yStart, isActive, sectionIndex, onScrollableChange]);
 
-  // Report content end Y position to parent (used for contact email overlay positioning)
+  // Report content end Y position to parent
   React.useEffect(() => {
     if (onContentEndY && isActive) {
       onContentEndY(sectionIndex, contentEndYRef.current);
     }
-  }, [canvas, isActive, sectionIndex, onContentEndY]);
+  }, [totalContentHeight, isActive, sectionIndex, onContentEndY]);
 
-  const texture = useMemo(() => new THREE.CanvasTexture(canvas), [canvas]);
-
-  // cleanup texture when unmounted
+  // Cleanup texture on unmount
   React.useEffect(() => {
     return () => {
-      texture.dispose();
+      if (textureRef.current) {
+        textureRef.current.dispose();
+        textureRef.current = null;
+      }
     };
-  }, [texture]);
+  }, []);
 
-  // Compute world size so the sprite occupies a consistent screen size (pixels) regardless of viewport / browser.
-  // Formula (perspective camera): worldWidth = 2 * distance * tan(fov/2) * (screenWidthPx / viewportHeightPx)
   const { camera, size: viewport } = useThree();
 
   useFrame((_, delta) => {
     if (!spriteRef.current) return;
-    // distance from camera to sprite (center)
+
+    // --- Sprite sizing ---
     const spriteWorldPos = new THREE.Vector3(...position);
     const camPos = camera.position;
     const distance = spriteWorldPos.distanceTo(camPos);
-
-    // ensure camera is PerspectiveCamera
-    // fov is in degrees
     const fov = ('fov' in camera && typeof (camera as any).fov === 'number') ? (camera as any).fov : 50;
     const viewportHeight = viewport.height || 800;
     const viewportWidth = viewport.width || 1280;
-
-    // World height and width at this distance
     const worldHeightAtDistance = 2 * distance * Math.tan((fov * Math.PI) / 180 / 2);
     const worldWidthAtDistance = worldHeightAtDistance * (viewportWidth / viewportHeight);
-
-    // The sprite should fill the screen vertically, and up to 85% horizontally
     let targetWorldWidth = worldWidthAtDistance;
     let targetWorldHeight = worldHeightAtDistance;
     const canvasAspect = canvasDims.width / canvasDims.height;
     const viewportAspect = viewportWidth / viewportHeight;
     if (canvasAspect < viewportAspect) {
-      // Canvas is narrower than viewport, match height
       targetWorldWidth = targetWorldHeight * canvasAspect;
     } else if (canvasAspect > viewportAspect) {
-      // Canvas is wider than viewport, match width (capped at 85%)
       targetWorldHeight = targetWorldWidth / canvasAspect;
     }
     spriteRef.current.scale.lerp(new THREE.Vector3(targetWorldWidth, targetWorldHeight, 1), 0.25);
 
-    // Fade in: 0.5 → 1 when active, stay at 0.5 when inactive
+    // --- Fade + keep material in sync with texture ref ---
     const targetOpacity = isActive ? 1 : 0.5;
     const mat = spriteRef.current.material as THREE.SpriteMaterial;
     mat.opacity += (targetOpacity - mat.opacity) * Math.min(1, 3 * delta);
+    if (textureRef.current && mat.map !== textureRef.current) {
+      mat.map = textureRef.current;
+      mat.needsUpdate = true;
+    }
+
+    // --- Smooth scroll: lerp toward target, redraw only on whole-pixel change ---
+    const diff = targetScrollRef.current - scrollOffsetRef.current;
+    if (Math.abs(diff) > 0.5) {
+      const lerpSpeed = 1 - Math.exp(-10 * delta);
+      scrollOffsetRef.current += diff * lerpSpeed;
+    }
+    const rounded = Math.round(scrollOffsetRef.current);
+    if (rounded !== lastDrawnScrollRef.current) {
+      lastDrawnScrollRef.current = rounded;
+      drawCanvas(rounded);
+    }
   });
 
-  // Handle mouse wheel scrolling - only for active sprite when there's overflow
+  // Handle mouse wheel scrolling
   React.useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
-      // Correct visible height calculation
       const visibleHeight = canvasDims.height / canvasDims.dpr - canvasMeasurements.yStart;
-      const maxScroll = Math.max(0, totalContentHeight - visibleHeight + 100); // add some padding to prevent cutting off text
+      const maxScroll = Math.max(0, totalContentHeight - visibleHeight + 100);
       if (isActive && totalContentHeight > visibleHeight) {
         e.preventDefault();
-        const scrollDelta = e.deltaY * 0.5;
-        let nextScroll = Math.max(0, Math.min(scrollOffsetRef.current + scrollDelta, maxScroll));
-        setScrollOffset(nextScroll);
-        setCurrentScroll(nextScroll);
-        scrollOffsetRef.current = nextScroll;
+        targetScrollRef.current = Math.max(0, Math.min(targetScrollRef.current + e.deltaY * 0.8, maxScroll));
       }
     };
     document.addEventListener('wheel', handleWheel, { passive: false });
     return () => document.removeEventListener('wheel', handleWheel);
   }, [isActive, totalContentHeight, canvasDims.height, canvasMeasurements.yStart]);
 
-    // Touch scroll and swipe for mobile
-    React.useEffect(() => {
-      let lastY: number | undefined = undefined;
-      let lastX: number | undefined = undefined;
-      let swipeStartX: number | undefined = undefined;
-      let swipeStartY: number | undefined = undefined;
-      let swipeDetected = false;
-      const SWIPE_THRESHOLD = 90; // px
-      const handleTouchStart = (e: TouchEvent) => {
-        if (e.touches && e.touches.length === 1) {
-          lastY = e.touches[0].clientY;
-          lastX = e.touches[0].clientX;
-          swipeStartX = e.touches[0].clientX;
-          swipeStartY = e.touches[0].clientY;
-          swipeDetected = false;
-        }
-      };
-      const handleTouchMove = (e: TouchEvent) => {
-        if (isActive && e.touches && e.touches.length === 1 && lastY !== undefined && lastX !== undefined && swipeStartX !== undefined && swipeStartY !== undefined) {
-          const newY = e.touches[0].clientY;
-          const newX = e.touches[0].clientX;
-          const deltaY = lastY - newY;
-          const deltaX = lastX - newX;
-          lastY = newY;
-          lastX = newX;
-          // Detect horizontal swipe (ignore if already detected in this gesture)
-          if (!swipeDetected) {
-            const totalDeltaX = newX - swipeStartX;
-            const totalDeltaY = newY - swipeStartY;
-            if (Math.abs(totalDeltaX) > SWIPE_THRESHOLD && Math.abs(totalDeltaX) > Math.abs(totalDeltaY)) {
-              swipeDetected = true;
-              if (totalDeltaX < 0 && typeof onSwipeLeft === 'function') {
-                onSwipeLeft();
-              } else if (totalDeltaX > 0 && typeof onSwipeRight === 'function') {
-                onSwipeRight();
-              }
-              return; // Don't scroll vertically if swiping horizontally
-            }
-          }
-          // Otherwise, handle vertical scroll
-          const visibleHeight = canvasDims.height / canvasDims.dpr - canvasMeasurements.yStart;
-          const maxScroll = Math.max(0, totalContentHeight - visibleHeight + 100);
-          if (maxScroll > 0) {
-            e.preventDefault(); // Prevent pull-to-refresh if scrolling is possible
-          }
-          let nextScroll = Math.max(0, Math.min(scrollOffsetRef.current + deltaY, maxScroll));
-          setScrollOffset(nextScroll);
-          setCurrentScroll(nextScroll);
-          scrollOffsetRef.current = nextScroll;
-        }
-      };
-      const handleTouchEnd = () => {
-        lastY = undefined;
-        lastX = undefined;
-        swipeStartX = undefined;
-        swipeStartY = undefined;
-        swipeDetected = false;
-      };
-      document.addEventListener('touchstart', handleTouchStart, { passive: false });
-      document.addEventListener('touchmove', handleTouchMove, { passive: false });
-      document.addEventListener('touchend', handleTouchEnd, { passive: false });
-      return () => {
-        document.removeEventListener('touchstart', handleTouchStart);
-        document.removeEventListener('touchmove', handleTouchMove);
-        document.removeEventListener('touchend', handleTouchEnd);
-      };
-    }, [isActive, canvasDims.height, canvasDims.dpr, canvasMeasurements.yStart, totalContentHeight, onSwipeLeft, onSwipeRight]);
-
+  // Touch scroll and swipe for mobile
   React.useEffect(() => {
-    scrollOffsetRef.current = scrollOffset; // keep ref in sync
-  }, [scrollOffset]);
+    let lastY: number | undefined = undefined;
+    let lastX: number | undefined = undefined;
+    let lastTime = 0;
+    let swipeStartX: number | undefined = undefined;
+    let swipeStartY: number | undefined = undefined;
+    let swipeDetected = false;
+    let touchVelocity = 0;
+    const SWIPE_THRESHOLD = 90;
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches && e.touches.length === 1) {
+        lastY = e.touches[0].clientY;
+        lastX = e.touches[0].clientX;
+        lastTime = performance.now();
+        swipeStartX = e.touches[0].clientX;
+        swipeStartY = e.touches[0].clientY;
+        swipeDetected = false;
+        touchVelocity = 0;
+        targetScrollRef.current = scrollOffsetRef.current;
+      }
+    };
+    const handleTouchMove = (e: TouchEvent) => {
+      if (isActive && e.touches && e.touches.length === 1 && lastY !== undefined && lastX !== undefined && swipeStartX !== undefined && swipeStartY !== undefined) {
+        const newY = e.touches[0].clientY;
+        const newX = e.touches[0].clientX;
+        const now = performance.now();
+        const dt = Math.max(1, now - lastTime) / 1000;
+        const deltaY = lastY - newY;
+        lastY = newY;
+        lastX = newX;
+        lastTime = now;
+        touchVelocity = deltaY / dt;
+        if (!swipeDetected) {
+          const totalDeltaX = newX - swipeStartX;
+          const totalDeltaY = newY - swipeStartY;
+          if (Math.abs(totalDeltaX) > SWIPE_THRESHOLD && Math.abs(totalDeltaX) > Math.abs(totalDeltaY)) {
+            swipeDetected = true;
+            if (totalDeltaX < 0 && typeof onSwipeLeft === 'function') {
+              onSwipeLeft();
+            } else if (totalDeltaX > 0 && typeof onSwipeRight === 'function') {
+              onSwipeRight();
+            }
+            return;
+          }
+        }
+        const visibleHeight = canvasDims.height / canvasDims.dpr - canvasMeasurements.yStart;
+        const maxScroll = Math.max(0, totalContentHeight - visibleHeight + 100);
+        if (maxScroll > 0) {
+          e.preventDefault();
+        }
+        const nextScroll = Math.max(0, Math.min(scrollOffsetRef.current + deltaY, maxScroll));
+        scrollOffsetRef.current = nextScroll;
+        targetScrollRef.current = nextScroll;
+      }
+    };
+    const handleTouchEnd = () => {
+      if (!swipeDetected && Math.abs(touchVelocity) > 50) {
+        const visibleHeight = canvasDims.height / canvasDims.dpr - canvasMeasurements.yStart;
+        const maxScroll = Math.max(0, totalContentHeight - visibleHeight + 100);
+        const projected = scrollOffsetRef.current + touchVelocity * 0.3;
+        targetScrollRef.current = Math.max(0, Math.min(projected, maxScroll));
+      }
+      lastY = undefined;
+      lastX = undefined;
+      swipeStartX = undefined;
+      swipeStartY = undefined;
+      swipeDetected = false;
+    };
+    document.addEventListener('touchstart', handleTouchStart, { passive: false });
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd, { passive: false });
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [isActive, canvasDims.height, canvasDims.dpr, canvasMeasurements.yStart, totalContentHeight, onSwipeLeft, onSwipeRight]);
 
   // Convert headerHeight (pixels) to world units
-  // Use viewport height and camera distance to estimate world units per pixel
   const spriteWorldPos = new THREE.Vector3(...position);
   const camPos = camera.position;
   const distance = spriteWorldPos.distanceTo(camPos);
@@ -349,11 +394,11 @@ function TextSprite({ position = [0, 0, 0], text = '', sectionIndex = 0, isActiv
 
   return (
     <group>
-      <sprite 
-        ref={spriteRef} 
+      <sprite
+        ref={spriteRef}
         position={[position[0], position[1] - yOffset, position[2]]}
       >
-        <spriteMaterial attach="material" args={[{ map: texture, toneMapped: false, transparent: true, depthWrite: false }]} />
+        <spriteMaterial attach="material" args={[{ toneMapped: false, transparent: true, depthWrite: false }]} />
       </sprite>
     </group>
   );
