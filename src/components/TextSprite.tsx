@@ -229,6 +229,11 @@ function TextSprite({ position = [0, 0, 0], text = '', sectionIndex = 0, isActiv
       targetWorldHeight = targetWorldWidth / canvasAspect;
     }
     spriteRef.current.scale.lerp(new THREE.Vector3(targetWorldWidth, targetWorldHeight, 1), 0.25);
+
+    // Fade in: 0.5 → 1 when active, stay at 0.5 when inactive
+    const targetOpacity = isActive ? 1 : 0.5;
+    const mat = spriteRef.current.material as THREE.SpriteMaterial;
+    mat.opacity += (targetOpacity - mat.opacity) * Math.min(1, 3 * delta);
   });
 
   // Handle mouse wheel scrolling - only for active sprite when there's overflow

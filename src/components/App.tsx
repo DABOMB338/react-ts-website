@@ -42,6 +42,19 @@ const App: React.FC = () => {
         };
     }, [activeSection]);
 
+    // Keyboard navigation: left/right arrows to switch sections
+    React.useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'ArrowRight') {
+                setActiveSection(prev => (prev + 1) % SECTION_TITLES.length);
+            } else if (e.key === 'ArrowLeft') {
+                setActiveSection(prev => (prev - 1 + SECTION_TITLES.length) % SECTION_TITLES.length);
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
     const handleScrollableChange = useCallback((sectionIndex: number, scrollable: boolean) => {
         if (sectionIndex === activeSection) {
             setIsActiveScrollable(scrollable);
