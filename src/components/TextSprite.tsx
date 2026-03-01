@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { wrapText } from './textUtils';
 
-function TextSprite({ position = [0, 0, 0], text = '', sectionIndex = 0, isActive = false, headerHeight = 0, onSwipeLeft, onSwipeRight, onScrollableChange }: {
+function TextSprite({ position = [0, 0, 0], text = '', sectionIndex = 0, isActive = false, headerHeight = 0, onSwipeLeft, onSwipeRight, onScrollableChange, onContentEndY }: {
   position?: [number, number, number];
   text?: string;
   sectionIndex?: number;
@@ -12,6 +12,7 @@ function TextSprite({ position = [0, 0, 0], text = '', sectionIndex = 0, isActiv
   onSwipeLeft?: () => void;
   onSwipeRight?: () => void;
   onScrollableChange?: (sectionIndex: number, scrollable: boolean) => void;
+  onContentEndY?: (sectionIndex: number, yFraction: number) => void;
 }) {
   const [canvasDims, setCanvasDims] = React.useState(() => {
     const vw = window.innerWidth;
@@ -27,6 +28,7 @@ function TextSprite({ position = [0, 0, 0], text = '', sectionIndex = 0, isActiv
   const [totalContentHeight, setTotalContentHeight] = React.useState(0);
   const spriteRef = React.useRef<THREE.Sprite>(null!);
   const scrollOffsetRef = React.useRef(0);
+  const contentEndYRef = React.useRef(0);
   React.useEffect(() => {
     const handleResize = () => {
       const vw = window.innerWidth;
@@ -117,8 +119,6 @@ function TextSprite({ position = [0, 0, 0], text = '', sectionIndex = 0, isActiv
         lines = [
           "Want to know more?",
           "Let's talk!",
-          "",
-          "Email: luke.c.mcmahon@gmail.com"
         ];
         lineHeight = Math.round(0.025 * height / dpr) + extraSpacing;
         break;
@@ -174,6 +174,8 @@ function TextSprite({ position = [0, 0, 0], text = '', sectionIndex = 0, isActiv
       y = wrapText(ctx, line, header ? (width / dpr) / 2 : (width / dpr) * 0.08, y, (width / dpr), canvasMeasurements.lineHeight, header, width / dpr > 1000);
     });
     setTotalContentHeight(canvasMeasurements.totalContentHeight + Math.round(0.028 * height / dpr) + 16);
+    // Store where content ends as a fraction of viewport height
+    contentEndYRef.current = y / (height / dpr);
     return ctxCanvas;
   }, [text, scrollOffset, canvasMeasurements, canvasDims]);
 
@@ -185,6 +187,13 @@ function TextSprite({ position = [0, 0, 0], text = '', sectionIndex = 0, isActiv
       onScrollableChange(sectionIndex, scrollable);
     }
   }, [totalContentHeight, canvasDims.height, canvasDims.dpr, canvasMeasurements.yStart, isActive, sectionIndex, onScrollableChange]);
+
+  // Report content end Y position to parent (used for contact email overlay positioning)
+  React.useEffect(() => {
+    if (onContentEndY && isActive) {
+      onContentEndY(sectionIndex, contentEndYRef.current);
+    }
+  }, [canvas, isActive, sectionIndex, onContentEndY]);
 
   const texture = useMemo(() => new THREE.CanvasTexture(canvas), [canvas]);
 

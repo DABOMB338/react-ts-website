@@ -11,6 +11,7 @@ const App: React.FC = () => {
     const [headerHeight, setHeaderHeight] = useState<number>(0);
     const [hasScrolled, setHasScrolled] = useState(false);
     const [isActiveScrollable, setIsActiveScrollable] = useState(false);
+    const [contactContentEndY, setContactContentEndY] = useState<number | null>(null);
 
     React.useEffect(() => {
         if (headerRef.current) {
@@ -61,6 +62,12 @@ const App: React.FC = () => {
         }
     }, [activeSection]);
 
+    const handleContentEndY = useCallback((sectionIndex: number, yFraction: number) => {
+        if (sectionIndex === 3) { // Contact section
+            setContactContentEndY(yFraction);
+        }
+    }, []);
+
     const rotateRight = () => {
         setActiveSection(prev => (prev - 1 + SECTION_TITLES.length) % SECTION_TITLES.length);
     };
@@ -73,7 +80,7 @@ const App: React.FC = () => {
         <div className="app-root">
             <div className="canvas-wrap">
                 <Suspense fallback={<div className="canvas-loading">Loading 3D scene…</div>}>
-                    <StarScene activeSection={activeSection} headerHeight={headerHeight} rotateLeft={rotateLeft} rotateRight={rotateRight} onScrollableChange={handleScrollableChange}/>
+                    <StarScene activeSection={activeSection} headerHeight={headerHeight} rotateLeft={rotateLeft} rotateRight={rotateRight} onScrollableChange={handleScrollableChange} onContentEndY={handleContentEndY}/>
                 </Suspense>
             </div>
 
@@ -94,6 +101,14 @@ const App: React.FC = () => {
                 <div className="scroll-indicator">
                     <div className="scroll-indicator-arrow" />
                     <span className="scroll-indicator-text">Scroll</span>
+                </div>
+            )}
+
+            {activeSection === 3 && contactContentEndY !== null && (
+                <div className="contact-overlay" style={{ top: `calc(${contactContentEndY * 100}% + ${headerHeight}px)` }}>
+                    <a href="mailto:luke.c.mcmahon@gmail.com" className="contact-email-link">
+                        luke.c.mcmahon@gmail.com
+                    </a>
                 </div>
             )}
         </div>
